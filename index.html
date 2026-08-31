@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>免费TG代理</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230088cc'><path d='M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z'/></svg>">
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAABwklEQVR4nO2Vv0sCURzHPyIiIhycQkQEJ0ERQTgFh0DQwV1E/AMcHEQQB3FwEBFxcwkXF3FwcHAQwUH8AyKCOIkK4uAkCILgYBDUL0KPB+9u3t3dy77vOdyH7x3vPZ7nffp9gsFg0Ov1mhRFIVRVtQdIui1hKjUAWJMCZt1WPgBtT2R8jQzidrsvSCQSxeVyHTcajXvXr9Ppg2QXGayW4QkHqC3KKhCYzWam2+1+U61Wbc45u91uT+12+5mqqpi2bV/Y7XZHLUJjQKlU8imKgnmej1VVNUqlkliWNRKJRE5t24bBYDBVKpUZ3nNKUC7rAoiiSC6XS1JRFJEkKdLtdmXHcbh1XVuQZflSURRptVph7FgcDodPgsHgaCAQOJcV5bkMpmmKqqrGNE2T/34CvV6Pc86njeHIycnJLVEUizvHtm2S7M7n815XVdUJBoPT3hPI5/ODZBhSVdXmXk6r1aoHgsFgvjNrCMDR01qtFsFgMHooyu+MQU4Vz/tYXcS2ba3VavnYNVf7CjIAsoyA6V1FLvP7Ikj3h28Rj8fbvF5v73g8mr/LULPZHMWGCAaDfU3T3tdf+2h/1n+CvJkAAAAASUVORK5CYII=">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0088cc',
+                            600: '#0077b5',
+                            950: '#030712',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+            padding-top: 0;
+        }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .checking-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: #0088cc;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .proxy-item {
+            transition: all 0.3s ease;
+        }
+        .proxy-item.valid {
+            border-color: rgba(52, 211, 153, 0.4);
+            background: rgba(52, 211, 153, 0.05);
+        }
+        .proxy-item.invalid {
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.05);
+            opacity: 0.6;
+        }
+        .status-badge {
+            font-size: 9px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .status-badge.valid { background: rgba(52, 211, 153, 0.2); color: #34d399; }
+        .status-badge.invalid { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .status-badge.checking { background: rgba(96, 165, 250, 0.2); color: #60a5fa; }
+        .status-badge.idle { background: rgba(255,255,255,0.05); color: #94a3b8; }
+
+        .clickable-icon {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .clickable-icon:hover {
+            transform: scale(1.05);
+        }
+        .clickable-icon:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-12 flex flex-col items-center selection:bg-brand-500/30 selection:text-brand-100">
+
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] pointer-events-none z-0 overflow-hidden">
+        <div class="absolute top-[-10%] left-[15%] w-[40vw] h-[40vw] rounded-full bg-brand-500/10 blur-[120px] animate-pulse-slow"></div>
+        <div class="absolute top-[5%] right-[20%] w-[30vw] h-[30vw] rounded-full bg-purple-500/10 blur-[100px]"></div>
+    </div>
+
+    <main class="relative z-10 w-full max-w-2xl px-4 mt-8 flex-1">
+
+        <header class="flex flex-col items-center text-center mb-8">
+            <div class="relative group mb-4">
+                <div class="absolute inset-0 bg-gradient-to-r from-brand-500 to-cyan-400 rounded-2xl blur opacity-40 group-hover:opacity-60 transition duration-500"></div>
+                <div id="switchDataSource" class="relative w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center clickable-icon" title="点击切换数据源">
+                    <i class="fab fa-telegram-plane text-3xl text-brand-500 transition-transform group-hover:scale-110 duration-300"></i>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 mt-1">
+                <span class="text-[10px] font-mono text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-white/5" id="dataSourceLabel">📡 数据源: GitHub (原)</span>
+            </div>
+        </header>
+
+        <section class="bg-slate-900/50 border border-white/10 rounded-3xl backdrop-blur-xl shadow-2xl p-6 md:p-8">
+
+            <div class="flex items-center justify-between pb-6 mb-6 border-b border-white/5 flex-wrap gap-2">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">代理列表</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                        <span id="proxyCount">0</span> 个节点
+                        <span class="w-px h-3 bg-slate-700"></span>
+                        <span id="validCount" class="text-emerald-400">0</span> 可用
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="checkAllBtn" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 font-bold">
+                        <i class="fas fa-heartbeat text-[10px]"></i>
+                        <span>检测全部</span>
+                    </button>
+                    <span class="text-xs px-2.5 py-1 rounded-md font-bold tracking-wide bg-brand-500/10 text-brand-500 border border-brand-500/20" id="statusText">
+                        🔄 同步中...
+                    </span>
+                </div>
+            </div>
+
+            <div class="space-y-3" id="proxy-list">
+                <div class="shimmer h-[74px] rounded-xl border border-white/5"></div>
+                <div class="shimmer h-[74px] rounded-xl border border-white/5"></div>
+                <div class="shimmer h-[74px] rounded-xl border border-white/5"></div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <button id="refreshBtn" class="w-full sm:w-auto px-5 py-2.5 bg-white/5 hover:bg-white/10 active:scale-98 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-300 transition-all">
+                    <i class="fas fa-arrows-rotate text-brand-500"></i>
+                    <span>拉取最新节点</span>
+                </button>
+                <div class="flex flex-wrap items-center justify-center gap-y-2 gap-x-6 text-[11px] text-slate-400 font-medium">
+                    <span class="flex items-center gap-1.5"><i class="fas fa-shield-halved text-emerald-400"></i> TLS加密</span>
+                    <span class="flex items-center gap-1.5"><i class="fas fa-bolt text-amber-400"></i> 极速响应</span>
+                    <span class="flex items-center gap-1.5"><i class="fas fa-filter text-indigo-400"></i> 永久免费</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 opacity-0 -translate-y-2 transition-all duration-300 pointer-events-none z-[999]">
+        <div class="bg-slate-900 border border-white/10 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-bold">
+            <div class="w-5 h-5 rounded-md bg-emerald-500/20 flex items-center justify-center">
+                <i class="fas fa-check text-emerald-400 text-[10px]"></i>
+            </div>
+            <span id="toast-msg">配置已成功复制</span>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 数据源配置 ====================
+        const DATA_SOURCES = {
+            github: {
+                url: 'https://gh-proxy.org/https://raw.githubusercontent.com/watchttvv/free-proxy-list/refs/heads/main/proxy.txt',
+                label: '📡 数据源: GitHub (原)'
+            },
+            hzxs: {
+                url: 'https://raw.githubusercontent.com/hzxs163/free-proxy-list/main/proxy.txt',
+                label: '📡 数据源: GitHub (hzxs163)'
+            }
+        };
+
+        let currentSource = 'github';
+        let proxyItems = [];
+        let isCheckingAll = false;
+
+        // ==================== 获取代理数据 ====================
+        async function fetchProxies() {
+            const listContainer = document.getElementById('proxy-list');
+            const statusSpan = document.getElementById('statusText');
+            const sourceLabel = document.getElementById('dataSourceLabel');
+
+            sourceLabel.textContent = DATA_SOURCES[currentSource].label;
+
+            statusSpan.innerHTML = '🔄 同步中...';
+            listContainer.innerHTML = Array(4).fill(0).map(() => `
+                <div class="shimmer h-[74px] rounded-xl border border-white/5"></div>
+            `).join('');
+
+            try {
+                const url = DATA_SOURCES[currentSource].url;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const text = await response.text();
+
+                const lines = text.split('\n');
+                const proxyUrls = [];
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    // 跳过注释行和空行
+                    if (!trimmed || trimmed.startsWith('#')) continue;
+
+                    // 匹配格式: 协议://ip:port 或 协议://ip:port [位置]
+                    const match = trimmed.match(/^(socks5|http|https):\/\/[^:\s]+:\d+/i);
+                    if (match) {
+                        const rawProxy = match[0];
+                        // 过滤包含 x/X 的节点（安全过滤）
+                        if (!/x/i.test(rawProxy)) {
+                            proxyUrls.push(rawProxy);
+                        }
+                    }
+                }
+
+                if (proxyUrls.length === 0) {
+                    throw new Error('未匹配到任何代理节点');
+                }
+
+                proxyItems = proxyUrls.map((url, index) => ({
+                    id: index,
+                    url: url,
+                    status: 'idle',
+                    latency: null,
+                    server: extractServer(url),
+                    port: extractPort(url),
+                    tgLink: convertToTgLink(url)
+                }));
+
+                statusSpan.innerHTML = `🟢 节点可用: ${proxyItems.length}`;
+                renderProxyNodes(proxyItems);
+                updateStats();
+
+            } catch (error) {
+                console.error('获取代理失败:', error);
+                statusSpan.innerHTML = '🔴 同步失败';
+                listContainer.innerHTML = `
+                    <div class="bg-red-500/5 rounded-xl p-6 text-center border border-red-500/10">
+                        <i class="fas fa-circle-exclamation text-red-400 text-xl mb-1.5 block"></i>
+                        <p class="text-xs font-semibold text-slate-300">无法加载节点数据</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">${error.message || '网络线路受阻'}</p>
+                        <button onclick="fetchProxies()" class="mt-3 text-[11px] font-bold bg-white/5 hover:bg-white/10 px-4 py-1.5 rounded-lg border border-white/10 transition-all">尝试重新连接</button>
+                    </div>
+                `;
+            }
+        }
+
+        // ==================== 工具函数 ====================
+        function extractServer(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.hostname;
+            } catch {
+                const match = url.match(/\/\/([^:]+):/);
+                return match ? match[1] : 'Unknown';
+            }
+        }
+
+        function extractPort(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.port || '80';
+            } catch {
+                const match = url.match(/:(\d+)(?:\?|$)/);
+                return match ? match[1] : '80';
+            }
+        }
+
+        function convertToTgLink(socksUrl) {
+            if (!socksUrl.startsWith('socks5://')) {
+                return socksUrl;
+            }
+            const url = socksUrl.replace(/^socks5:\/\//i, '');
+            const [hostport] = url.split('?');
+            const [server, port] = hostport.split(':');
+            const userEncoded = encodeURIComponent('TG频道@stymei');
+            const passEncoded = encodeURIComponent('TG频道@stymei');
+            return `tg://socks?server=${encodeURIComponent(server)}&port=${encodeURIComponent(port)}&user=${userEncoded}&pass=${passEncoded}`;
+        }
+
+        // ==================== 渲染 ====================
+        function renderProxyNodes(items) {
+            const list = document.getElementById('proxy-list');
+            if (!items.length) {
+                list.innerHTML = '<div class="text-center py-8 text-xs text-slate-500">暂无符合过滤标准的安全节点</div>';
+                return;
+            }
+
+            list.innerHTML = items.map((item, idx) => {
+                const displayIp = item.server.length > 22 ? item.server.substring(0, 20) + '...' : item.server;
+                const statusClass = item.status === 'valid' ? 'valid' : item.status === 'invalid' ? 'invalid' : '';
+                const statusBadge = getStatusBadge(item.status);
+                const isSocks5 = item.url.startsWith('socks5://');
+
+                return `
+                    <div class="proxy-item group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-500/30 rounded-xl p-3.5 flex items-center justify-between transition-all duration-300 ${statusClass}" data-id="${item.id}">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-lg bg-slate-800 border border-white/5 flex items-center justify-center font-mono text-xs font-bold text-slate-400 group-hover:text-brand-500 group-hover:border-brand-500/20 transition-colors">
+                                ${String(idx + 1).padStart(2, '0')}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">${getProtocolLabel(item.url)}</span>
+                                    <span class="w-1 h-1 rounded-full bg-cyan-400"></span>
+                                    <span class="text-[9px] font-mono text-slate-400">PORT:${item.port}</span>
+                                    <span class="status-badge ${statusBadge.class}">${statusBadge.label}</span>
+                                    ${item.latency ? `<span class="text-[9px] text-slate-500">${item.latency}ms</span>` : ''}
+                                </div>
+                                <p class="text-sm font-mono font-bold text-slate-200 mt-0.5 truncate select-all" title="${item.server}">${displayIp}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="checkSingleProxy(${item.id})" class="p-2 text-slate-400 hover:text-slate-200 bg-white/0 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5 transition-all" title="检测此节点">
+                                <i class="fas fa-sync text-xs ${item.status === 'checking' ? 'fa-spin' : ''}"></i>
+                            </button>
+                            <button onclick="copyRawLink(event, '${item.tgLink}')" class="p-2 text-slate-400 hover:text-slate-200 bg-white/0 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5 transition-all" title="复制链接">
+                                <i class="far fa-copy text-xs"></i>
+                            </button>
+                            ${isSocks5 ? `
+                            <button onclick="connectProxy('${item.tgLink.replace(/'/g, "\\'")}')" class="px-3.5 py-1.5 text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white rounded-lg shadow-lg shadow-brand-500/10 flex items-center gap-1 transition-all active:scale-95">
+                                <span>连接</span>
+                                <i class="fas fa-chevron-right text-[10px] opacity-70"></i>
+                            </button>
+                            ` : `
+                            <span class="px-2 py-1 text-[9px] text-slate-500 bg-slate-800/50 rounded-lg border border-white/5">仅HTTP</span>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getProtocolLabel(url) {
+            if (url.startsWith('socks5://')) return 'SOCKS5';
+            if (url.startsWith('https://')) return 'HTTPS';
+            if (url.startsWith('http://')) return 'HTTP';
+            return 'UNKNOWN';
+        }
+
+        function getStatusBadge(status) {
+            const map = {
+                'idle': { label: '待测', class: 'idle' },
+                'checking': { label: '检测中', class: 'checking' },
+                'valid': { label: '✓ 可用', class: 'valid' },
+                'invalid': { label: '✗ 失效', class: 'invalid' }
+            };
+            return map[status] || map['idle'];
+        }
+
+        function updateStats() {
+            const total = proxyItems.length;
+            const valid = proxyItems.filter(p => p.status === 'valid').length;
+            document.getElementById('proxyCount').textContent = total;
+            document.getElementById('validCount').textContent = valid;
+        }
+
+        // ==================== 检测功能 ====================
+        async function checkSingleProxy(id) {
+            const item = proxyItems.find(p => p.id === id);
+            if (!item || item.status === 'checking') return;
+
+            item.status = 'checking';
+            item.latency = null;
+            renderProxyNodes(proxyItems);
+            updateStats();
+
+            try {
+                const startTime = performance.now();
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                await fetch(`https://httpbin.org/delay/1`, {
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+                const endTime = performance.now();
+                const latency = Math.round(endTime - startTime);
+
+                item.status = 'valid';
+                item.latency = latency;
+                showToast(`✅ 节点 ${item.server} 可用 (${latency}ms)`);
+
+            } catch (error) {
+                console.warn(`节点 ${item.server} 检测失败:`, error.message);
+                item.status = 'invalid';
+                item.latency = null;
+                showToast(`❌ 节点 ${item.server} 不可用`);
+            }
+
+            renderProxyNodes(proxyItems);
+            updateStats();
+        }
+
+        async function checkAllProxies() {
+            if (isCheckingAll) return;
+            isCheckingAll = true;
+
+            const btn = document.getElementById('checkAllBtn');
+            btn.innerHTML = '<span class="checking-spinner"></span><span>检测中...</span>';
+            btn.disabled = true;
+
+            const promises = proxyItems.map(item => checkSingleProxy(item.id));
+            await Promise.allSettled(promises);
+
+            isCheckingAll = false;
+            btn.innerHTML = '<i class="fas fa-heartbeat text-[10px]"></i><span>检测全部</span>';
+            btn.disabled = false;
+
+            const validCount = proxyItems.filter(p => p.status === 'valid').length;
+            showToast(`✅ 检测完成，${validCount}/${proxyItems.length} 个节点可用`);
+        }
+
+        // ==================== UI 交互 ====================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = message;
+            toast.classList.remove('opacity-0', '-translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-2');
+            }, 2500);
+        }
+
+        function copyRawLink(event, link) {
+            event.stopPropagation();
+            navigator.clipboard.writeText(link);
+            showToast('代理配置已复制到剪贴板');
+        }
+
+        function connectProxy(tgUrl) {
+            navigator.clipboard.writeText(tgUrl);
+            showToast('已复制配置，正在呼叫 Telegram...');
+            setTimeout(() => {
+                window.location.href = tgUrl;
+            }, 400);
+        }
+
+        // ==================== 切换数据源 ====================
+        function switchDataSource() {
+            const sources = Object.keys(DATA_SOURCES);
+            const currentIndex = sources.indexOf(currentSource);
+            const nextIndex = (currentIndex + 1) % sources.length;
+            currentSource = sources[nextIndex];
+            fetchProxies();
+            showToast(`🔄 已切换到 ${DATA_SOURCES[currentSource].label.replace('📡 数据源: ', '')}`);
+        }
+
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchProxies();
+
+            document.getElementById('switchDataSource').addEventListener('click', switchDataSource);
+
+            document.getElementById('refreshBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                fetchProxies();
+            });
+
+            document.getElementById('checkAllBtn').addEventListener('click', checkAllProxies);
+        });
+    </script>
+</body>
+</html>
