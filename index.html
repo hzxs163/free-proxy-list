@@ -89,6 +89,30 @@
         .clickable-icon:active {
             transform: scale(0.95);
         }
+
+        /* 分页标签样式 */
+        .page-tab {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+        .page-tab.active {
+            background: rgba(0, 136, 204, 0.2);
+            border-color: rgba(0, 136, 204, 0.4);
+            color: #60a5fa;
+        }
+        .page-tab.inactive {
+            color: #64748b;
+            border-color: rgba(255,255,255,0.05);
+        }
+        .page-tab.inactive:hover {
+            background: rgba(255,255,255,0.05);
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-12 flex flex-col items-center selection:bg-brand-500/30 selection:text-brand-100">
@@ -107,8 +131,12 @@
                     <i class="fab fa-telegram-plane text-3xl text-brand-500 transition-transform group-hover:scale-110 duration-300"></i>
                 </div>
             </div>
-            <div class="flex items-center gap-3 mt-1">
-                <span class="text-[10px] font-mono text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-white/5" id="dataSourceLabel">📡 数据源: GitHub (原)</span>
+            <!-- 分页标签：SOCKS5 / HTTP -->
+            <div class="flex items-center gap-2 mt-1">
+                <span id="pageTabSocks5" class="page-tab active">SOCKS5</span>
+                <span id="pageTabHttp" class="page-tab inactive">HTTP</span>
+                <span class="w-px h-4 bg-slate-700 mx-1"></span>
+                <span class="text-[10px] font-mono text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-white/5" id="dataSourceLabel">📡 数据源: 本地</span>
             </div>
         </header>
 
@@ -168,23 +196,43 @@
         const DATA_SOURCES = {
             local: {
                 url: 'proxy.txt',
-                label: '📡 数据源: 本地 (同目录)'
+                label: '📡 数据源: 本地'
             },
             github: {
                 url: 'https://gh-proxy.org/https://raw.githubusercontent.com/watchttvv/free-proxy-list/refs/heads/main/proxy.txt',
                 label: '📡 数据源: GitHub (备用)'
             }
         };
-        
-        let currentSource = 'local';
+
+        // ==================== 状态 ====================
+        let currentSource = 'local';      // 'local' 或 'github'
+        let currentPage = 'socks5';       // 'socks5' 或 'http'
         let proxyItems = [];
         let isCheckingAll = false;
+
+        // ==================== DOM 引用 ====================
+        const tabSocks5 = document.getElementById('pageTabSocks5');
+        const tabHttp = document.getElementById('pageTabHttp');
+        const sourceLabel = document.getElementById('dataSourceLabel');
+
+        // ==================== 切换页面 ====================
+        function switchPage(page) {
+            if (page === currentPage) return;
+            currentPage = page;
+
+            // 更新标签样式
+            tabSocks5.className = `page-tab ${page === 'socks5' ? 'active' : 'inactive'}`;
+            tabHttp.className = `page-tab ${page === 'http' ? 'active' : 'inactive'}`;
+
+            // 重新渲染当前列表
+            renderProxyNodes(proxyItems);
+            updateStats();
+        }
 
         // ==================== 获取代理数据 ====================
         async function fetchProxies() {
             const listContainer = document.getElementById('proxy-list');
             const statusSpan = document.getElementById('statusText');
-            const sourceLabel = document.getElementById('dataSourceLabel');
 
             sourceLabel.textContent = DATA_SOURCES[currentSource].label;
 
@@ -204,10 +252,9 @@
 
                 for (const line of lines) {
                     const trimmed = line.trim();
-                    // 跳过注释行和空行
                     if (!trimmed || trimmed.startsWith('#')) continue;
 
-                    // 匹配格式: 协议://ip:port 或 协议://ip:port [位置]
+                    // 匹配格式: 协议://ip:port
                     const match = trimmed.match(/^(socks5|http|https):\/\/[^:\s]+:\d+/i);
                     if (match) {
                         const rawProxy = match[0];
@@ -233,6 +280,7 @@
                 }));
 
                 statusSpan.innerHTML = `🟢 节点可用: ${proxyItems.length}`;
+                // 根据当前页面渲染
                 renderProxyNodes(proxyItems);
                 updateStats();
 
@@ -283,15 +331,42 @@
             return `tg://socks?server=${encodeURIComponent(server)}&port=${encodeURIComponent(port)}&user=${userEncoded}&pass=${passEncoded}`;
         }
 
-        // ==================== 渲染 ====================
+        function getProtocolLabel(url) {
+            if (url.startsWith('socks5://')) return 'SOCKS5';
+            if (url.startsWith('https://')) return 'HTTPS';
+            if (url.startsWith('http://')) return 'HTTP';
+            return 'UNKNOWN';
+        }
+
+        function getStatusBadge(status) {
+            const map = {
+                'idle': { label: '待测', class: 'idle' },
+                'checking': { label: '检测中', class: 'checking' },
+                'valid': { label: '✓ 可用', class: 'valid' },
+                'invalid': { label: '✗ 失效', class: 'invalid' }
+            };
+            return map[status] || map['idle'];
+        }
+
+        // ==================== 渲染（根据当前页面过滤） ====================
         function renderProxyNodes(items) {
             const list = document.getElementById('proxy-list');
-            if (!items.length) {
-                list.innerHTML = '<div class="text-center py-8 text-xs text-slate-500">暂无符合过滤标准的安全节点</div>';
+
+            // 根据 currentPage 过滤
+            let filtered = items;
+            if (currentPage === 'socks5') {
+                filtered = items.filter(item => item.url.startsWith('socks5://'));
+            } else {
+                // HTTP 页面：显示 http 和 https
+                filtered = items.filter(item => item.url.startsWith('http://') || item.url.startsWith('https://'));
+            }
+
+            if (!filtered.length) {
+                list.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">暂无 ${currentPage === 'socks5' ? 'SOCKS5' : 'HTTP/HTTPS'} 类型节点</div>`;
                 return;
             }
 
-            list.innerHTML = items.map((item, idx) => {
+            list.innerHTML = filtered.map((item, idx) => {
                 const displayIp = item.server.length > 22 ? item.server.substring(0, 20) + '...' : item.server;
                 const statusClass = item.status === 'valid' ? 'valid' : item.status === 'invalid' ? 'invalid' : '';
                 const statusBadge = getStatusBadge(item.status);
@@ -335,26 +410,15 @@
             }).join('');
         }
 
-        function getProtocolLabel(url) {
-            if (url.startsWith('socks5://')) return 'SOCKS5';
-            if (url.startsWith('https://')) return 'HTTPS';
-            if (url.startsWith('http://')) return 'HTTP';
-            return 'UNKNOWN';
-        }
-
-        function getStatusBadge(status) {
-            const map = {
-                'idle': { label: '待测', class: 'idle' },
-                'checking': { label: '检测中', class: 'checking' },
-                'valid': { label: '✓ 可用', class: 'valid' },
-                'invalid': { label: '✗ 失效', class: 'invalid' }
-            };
-            return map[status] || map['idle'];
-        }
-
         function updateStats() {
-            const total = proxyItems.length;
-            const valid = proxyItems.filter(p => p.status === 'valid').length;
+            let filtered = proxyItems;
+            if (currentPage === 'socks5') {
+                filtered = proxyItems.filter(item => item.url.startsWith('socks5://'));
+            } else {
+                filtered = proxyItems.filter(item => item.url.startsWith('http://') || item.url.startsWith('https://'));
+            }
+            const total = filtered.length;
+            const valid = filtered.filter(p => p.status === 'valid').length;
             document.getElementById('proxyCount').textContent = total;
             document.getElementById('validCount').textContent = valid;
         }
@@ -405,15 +469,23 @@
             btn.innerHTML = '<span class="checking-spinner"></span><span>检测中...</span>';
             btn.disabled = true;
 
-            const promises = proxyItems.map(item => checkSingleProxy(item.id));
+            // 只检测当前页面显示的节点
+            let targetItems = proxyItems;
+            if (currentPage === 'socks5') {
+                targetItems = proxyItems.filter(item => item.url.startsWith('socks5://'));
+            } else {
+                targetItems = proxyItems.filter(item => item.url.startsWith('http://') || item.url.startsWith('https://'));
+            }
+
+            const promises = targetItems.map(item => checkSingleProxy(item.id));
             await Promise.allSettled(promises);
 
             isCheckingAll = false;
             btn.innerHTML = '<i class="fas fa-heartbeat text-[10px]"></i><span>检测全部</span>';
             btn.disabled = false;
 
-            const validCount = proxyItems.filter(p => p.status === 'valid').length;
-            showToast(`✅ 检测完成，${validCount}/${proxyItems.length} 个节点可用`);
+            const validCount = targetItems.filter(p => p.status === 'valid').length;
+            showToast(`✅ 检测完成，${validCount}/${targetItems.length} 个节点可用`);
         }
 
         // ==================== UI 交互 ====================
@@ -445,10 +517,11 @@
 
         // ==================== 切换数据源 ====================
         function switchDataSource() {
-            const sources = Object.keys(DATA_SOURCES);
-            const currentIndex = sources.indexOf(currentSource);
-            const nextIndex = (currentIndex + 1) % sources.length;
-            currentSource = sources[nextIndex];
+            if (currentSource === 'local') {
+                currentSource = 'github';
+            } else {
+                currentSource = 'local';
+            }
             fetchProxies();
             showToast(`🔄 已切换到 ${DATA_SOURCES[currentSource].label.replace('📡 数据源: ', '')}`);
         }
@@ -457,14 +530,21 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchProxies();
 
+            // 头部图标点击切换数据源
             document.getElementById('switchDataSource').addEventListener('click', switchDataSource);
 
+            // 刷新按钮
             document.getElementById('refreshBtn').addEventListener('click', (e) => {
                 e.preventDefault();
                 fetchProxies();
             });
 
+            // 检测全部按钮
             document.getElementById('checkAllBtn').addEventListener('click', checkAllProxies);
+
+            // 分页标签点击
+            tabSocks5.addEventListener('click', () => switchPage('socks5'));
+            tabHttp.addEventListener('click', () => switchPage('http'));
         });
     </script>
 </body>
