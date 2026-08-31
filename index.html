@@ -113,6 +113,18 @@
             background: rgba(255,255,255,0.05);
             color: #94a3b8;
         }
+
+        .source-label-clickable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .source-label-clickable:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+        }
+        .source-label-clickable:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-12 flex flex-col items-center selection:bg-brand-500/30 selection:text-brand-100">
@@ -127,16 +139,18 @@
         <header class="flex flex-col items-center text-center mb-8">
             <div class="relative group mb-4">
                 <div class="absolute inset-0 bg-gradient-to-r from-brand-500 to-cyan-400 rounded-2xl blur opacity-40 group-hover:opacity-60 transition duration-500"></div>
-                <div id="switchDataSource" class="relative w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center clickable-icon" title="点击切换数据源">
+                <!-- 头部图标：点击切换 SOCKS5 / HTTP 页面 -->
+                <div id="switchPage" class="relative w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center clickable-icon" title="点击切换 SOCKS5 / HTTP">
                     <i class="fab fa-telegram-plane text-3xl text-brand-500 transition-transform group-hover:scale-110 duration-300"></i>
                 </div>
             </div>
-            <!-- 分页标签：SOCKS5 / HTTP -->
+            <!-- 分页标签：SOCKS5 / HTTP（点击同样切换） -->
             <div class="flex items-center gap-2 mt-1">
                 <span id="pageTabSocks5" class="page-tab active">SOCKS5</span>
                 <span id="pageTabHttp" class="page-tab inactive">HTTP</span>
                 <span class="w-px h-4 bg-slate-700 mx-1"></span>
-                <span class="text-[10px] font-mono text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-white/5" id="dataSourceLabel">📡 数据源: 本地</span>
+                <!-- 点击"📡 数据源: XXX" 切换 本地 / GitHub(备用) -->
+                <span id="dataSourceLabel" class="text-[10px] font-mono text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-white/5 source-label-clickable" title="点击切换数据源">📡 数据源: 本地</span>
             </div>
         </header>
 
@@ -214,8 +228,9 @@
         const tabSocks5 = document.getElementById('pageTabSocks5');
         const tabHttp = document.getElementById('pageTabHttp');
         const sourceLabel = document.getElementById('dataSourceLabel');
+        const switchPageBtn = document.getElementById('switchPage');
 
-        // ==================== 切换页面 ====================
+        // ==================== 切换页面 (SOCKS5 / HTTP) ====================
         function switchPage(page) {
             if (page === currentPage) return;
             currentPage = page;
@@ -227,14 +242,27 @@
             // 重新渲染当前列表
             renderProxyNodes(proxyItems);
             updateStats();
+            showToast(`📄 切换到 ${page === 'socks5' ? 'SOCKS5' : 'HTTP'} 列表`);
+        }
+
+        // ==================== 切换数据源 (本地 / GitHub备用) ====================
+        function switchDataSource() {
+            if (currentSource === 'local') {
+                currentSource = 'github';
+            } else {
+                currentSource = 'local';
+            }
+            // 更新标签文字
+            sourceLabel.textContent = DATA_SOURCES[currentSource].label;
+            // 重新抓取数据
+            fetchProxies();
+            showToast(`🔄 已切换到 ${DATA_SOURCES[currentSource].label.replace('📡 数据源: ', '')}`);
         }
 
         // ==================== 获取代理数据 ====================
         async function fetchProxies() {
             const listContainer = document.getElementById('proxy-list');
             const statusSpan = document.getElementById('statusText');
-
-            sourceLabel.textContent = DATA_SOURCES[currentSource].label;
 
             statusSpan.innerHTML = '🔄 同步中...';
             listContainer.innerHTML = Array(4).fill(0).map(() => `
@@ -515,36 +543,38 @@
             }, 400);
         }
 
-        // ==================== 切换数据源 ====================
-        function switchDataSource() {
-            if (currentSource === 'local') {
-                currentSource = 'github';
-            } else {
-                currentSource = 'local';
-            }
-            fetchProxies();
-            showToast(`🔄 已切换到 ${DATA_SOURCES[currentSource].label.replace('📡 数据源: ', '')}`);
-        }
-
         // ==================== 初始化 ====================
         document.addEventListener('DOMContentLoaded', () => {
+            // 默认标签显示
+            sourceLabel.textContent = DATA_SOURCES[currentSource].label;
+            // 初次抓取
             fetchProxies();
 
-            // 头部图标点击切换数据源
-            document.getElementById('switchDataSource').addEventListener('click', switchDataSource);
+            // ----- 点击事件绑定 -----
 
-            // 刷新按钮
+            // 1. 头部 Telegram 图标 -> 切换 SOCKS5 / HTTP 页面
+            switchPageBtn.addEventListener('click', () => {
+                const nextPage = currentPage === 'socks5' ? 'http' : 'socks5';
+                switchPage(nextPage);
+            });
+
+            // 2. 分页标签 SOCKS5 点击
+            tabSocks5.addEventListener('click', () => switchPage('socks5'));
+
+            // 3. 分页标签 HTTP 点击
+            tabHttp.addEventListener('click', () => switchPage('http'));
+
+            // 4. 数据源标签点击 -> 切换 本地 / GitHub(备用)
+            sourceLabel.addEventListener('click', switchDataSource);
+
+            // 5. 刷新按钮
             document.getElementById('refreshBtn').addEventListener('click', (e) => {
                 e.preventDefault();
                 fetchProxies();
             });
 
-            // 检测全部按钮
+            // 6. 检测全部按钮
             document.getElementById('checkAllBtn').addEventListener('click', checkAllProxies);
-
-            // 分页标签点击
-            tabSocks5.addEventListener('click', () => switchPage('socks5'));
-            tabHttp.addEventListener('click', () => switchPage('http'));
         });
     </script>
 </body>
