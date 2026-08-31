@@ -34,6 +34,8 @@
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             overflow-x: hidden;
             padding-top: 0;
+            margin: 0;
+            background: #0f172a;
         }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
@@ -130,9 +132,7 @@
             position: fixed;
             inset: 0;
             z-index: 9999;
-            background: rgba(2, 6, 23, 0.92);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: #0f172a;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -143,210 +143,47 @@
             visibility: hidden;
             pointer-events: none;
         }
-        .lock-box {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 32px;
-            padding: 32px 28px;
-            max-width: 520px;
-            width: 92%;
-            text-align: center;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
-        }
-        .lock-box h2 {
-            color: #f1f5f9;
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .lock-box p {
-            color: #94a3b8;
-            font-size: 13px;
-            margin-bottom: 18px;
-        }
 
         .image-wrapper {
             position: relative;
             display: inline-block;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 2px solid rgba(255,255,255,0.06);
+            max-width: 95vw;
+            max-height: 95vh;
             cursor: pointer;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
         .image-wrapper img {
             display: block;
-            width: 100%;
+            width: auto;
             height: auto;
-            max-height: 350px;
+            max-width: 95vw;
+            max-height: 95vh;
             object-fit: contain;
+            border-radius: 8px;
         }
 
-        /* 点击波纹效果 */
+        /* 点击波纹效果（极简，仅用于反馈） */
         .ripple {
             position: absolute;
             border-radius: 50%;
-            border: 3px solid rgba(0, 136, 204, 0.6);
-            background: rgba(0, 136, 204, 0.15);
+            border: 2px solid rgba(255,255,255,0.15);
             pointer-events: none;
             transform: translate(-50%, -50%) scale(0);
-            animation: rippleAnim 0.6s ease forwards;
+            animation: rippleAnim 0.5s ease forwards;
         }
         @keyframes rippleAnim {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
-        }
-
-        /* 点击计数标记 */
-        .click-counter {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            font-weight: 900;
-            color: rgba(255,255,255,0.9);
-            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
-            pointer-events: none;
-            opacity: 0;
-            transition: all 0.2s ease;
-        }
-        .click-counter.show {
-            opacity: 1;
-        }
-        .click-counter.done {
-            color: #34d399;
-        }
-
-        /* 进度环 */
-        .progress-ring {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin: 16px 0 14px;
-        }
-        .progress-ring .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.08);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .progress-ring .dot.done {
-            background: #34d399;
-            border-color: #34d399;
-            transform: scale(1.15);
-        }
-        .progress-ring .dot.current {
-            background: #0088cc;
-            border-color: #0088cc;
-            animation: pulse 0.8s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.25); }
-        }
-
-        .lock-status {
-            color: #94a3b8;
-            font-size: 14px;
-            min-height: 28px;
-            margin: 8px 0 16px;
-        }
-        .lock-status.error { color: #f87171; }
-        .lock-status.success { color: #34d399; }
-
-        .btn-row {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
-        .btn-row button {
-            padding: 10px 28px;
-            border-radius: 12px;
-            border: none;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .btn-unlock {
-            background: linear-gradient(135deg, #0088cc, #006699);
-            color: #fff;
-            flex: 1;
-        }
-        .btn-unlock:hover { opacity: 0.9; }
-        .btn-unlock:active { transform: scale(0.97); }
-        .btn-reset {
-            background: rgba(255,255,255,0.06);
-            color: #94a3b8;
-        }
-        .btn-reset:hover { background: rgba(255,255,255,0.12); }
-        .btn-reset:active { transform: scale(0.97); }
-
-        .hint-text {
-            font-size: 11px;
-            color: #475569;
-            margin-top: 16px;
-        }
-        .hint-text kbd {
-            background: rgba(255,255,255,0.05);
-            padding: 2px 10px;
-            border-radius: 4px;
-            color: #94a3b8;
-        }
-
-        /* 目标点提示（解锁页面上的小标记） */
-        .target-hint {
-            position: absolute;
-            border: 2px dashed rgba(0, 136, 204, 0.4);
-            border-radius: 50%;
-            pointer-events: none;
-            animation: hintPulse 1.5s ease-in-out infinite;
-        }
-        @keyframes hintPulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-            50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen pb-12 flex flex-col items-center selection:bg-brand-500/30 selection:text-brand-100">
+<body>
 
-    <!-- ===== 图片解锁遮罩 ===== -->
+    <!-- ===== 图片解锁遮罩（仅一张图） ===== -->
     <div id="lock-overlay">
-        <div class="lock-box">
-            <div style="font-size: 36px; margin-bottom: 4px;">👆</div>
-            <h2>连续点击解锁</h2>
-            <p>在图片上<strong style="color:#60a5fa;">同一个位置</strong>连续点击 <strong style="color:#34d399;">6 次</strong></p>
-
-            <div class="progress-ring" id="progressRing">
-                <div class="dot" data-index="0"></div>
-                <div class="dot" data-index="1"></div>
-                <div class="dot" data-index="2"></div>
-                <div class="dot" data-index="3"></div>
-                <div class="dot" data-index="4"></div>
-                <div class="dot" data-index="5"></div>
-            </div>
-
-            <div class="image-wrapper" id="imageWrapper">
-                <img src="pic.jpg" alt="解锁图片" id="unlockImage">
-                <div class="click-counter" id="clickCounter">0</div>
-                <!-- 目标点提示：告诉用户点哪里 -->
-                <div class="target-hint" id="targetHint" style="left:40.3%;top:10.3%;width:40px;height:40px;margin-left:-20px;margin-top:-20px;"></div>
-            </div>
-
-            <div class="lock-status" id="lockStatus">👆 在图片上连续点击 6 次（同一位置）</div>
-
-            <div class="btn-row">
-                <button class="btn-unlock" id="unlockBtn">✅ 验证</button>
-                <button class="btn-reset" id="resetLockBtn">🔄 重置</button>
-            </div>
-
-            <div class="hint-text">
-                提示：点击图片上<strong style="color:#60a5fa;">⭕ 圆圈标记</strong>的位置，连续 <kbd>6</kbd> 次
-            </div>
+        <div class="image-wrapper" id="imageWrapper">
+            <img src="pic.jpg" alt="解锁图片" id="unlockImage">
         </div>
     </div>
 
@@ -430,75 +267,21 @@
 
     <script>
         // ================================================================
-        //  第一部分：图片连续点击解锁（使用您测出的坐标 X:40.3% Y:10.3%）
+        //  第一部分：图片连续点击解锁（纯图片，无任何文字提示）
         // ================================================================
         (function initLock() {
             // ----- 配置 -----
             const REQUIRED_CLICKS = 6;
             const CLICK_TARGET_X = 40.3;   // 您的坐标
             const CLICK_TARGET_Y = 10.3;   // 您的坐标
-            const CLICK_RADIUS = 12;       // 容错半径（百分比），可适当调整
+            const CLICK_RADIUS = 12;       // 容错半径（百分比）
 
             let clickCount = 0;
-            let isUnlocked = false;
             let clickTimeout = null;
 
             const overlay = document.getElementById('lock-overlay');
             const mainContent = document.getElementById('main-content');
             const imageWrapper = document.getElementById('imageWrapper');
-            const clickCounter = document.getElementById('clickCounter');
-            const lockStatus = document.getElementById('lockStatus');
-            const progressDots = document.querySelectorAll('#progressRing .dot');
-            const unlockBtn = document.getElementById('unlockBtn');
-            const resetBtn = document.getElementById('resetLockBtn');
-
-            // ----- 更新UI -----
-            function updateUI() {
-                progressDots.forEach((dot, i) => {
-                    dot.className = 'dot';
-                    if (i < clickCount) {
-                        dot.classList.add('done');
-                    } else if (i === clickCount && !isUnlocked) {
-                        dot.classList.add('current');
-                    }
-                });
-
-                clickCounter.textContent = clickCount;
-                if (clickCount > 0) {
-                    clickCounter.classList.add('show');
-                } else {
-                    clickCounter.classList.remove('show');
-                }
-                if (isUnlocked) {
-                    clickCounter.classList.add('done');
-                } else {
-                    clickCounter.classList.remove('done');
-                }
-
-                if (isUnlocked) {
-                    lockStatus.textContent = '🎉 解锁成功！点击「验证」进入';
-                    lockStatus.className = 'lock-status success';
-                } else if (clickCount === REQUIRED_CLICKS) {
-                    lockStatus.textContent = '✅ 已点击 6 次，点击「验证」解锁';
-                    lockStatus.className = 'lock-status success';
-                } else {
-                    lockStatus.textContent = `👆 连续点击 ${REQUIRED_CLICKS} 次（${clickCount}/${REQUIRED_CLICKS}）`;
-                    lockStatus.className = 'lock-status';
-                }
-            }
-
-            // ----- 重置 -----
-            function resetLock() {
-                clickCount = 0;
-                isUnlocked = false;
-                if (clickTimeout) {
-                    clearTimeout(clickTimeout);
-                    clickTimeout = null;
-                }
-                updateUI();
-                lockStatus.textContent = '👆 在图片上连续点击 6 次（同一位置）';
-                lockStatus.className = 'lock-status';
-            }
 
             // ----- 检查点击是否在目标区域 -----
             function isInTarget(e) {
@@ -511,28 +294,12 @@
 
             // ----- 点击处理 -----
             function handleImageClick(e) {
-                if (isUnlocked) return;
-
-                // 检查是否点中目标区域
+                // 检查是否点中目标区域，不对则静默忽略
                 if (!isInTarget(e)) {
-                    // 点错位置：提示
-                    lockStatus.textContent = '⚠️ 请点击圆圈标记的位置！';
-                    lockStatus.className = 'lock-status error';
-                    // 震动反馈
-                    imageWrapper.style.transform = 'scale(0.97)';
-                    setTimeout(() => { imageWrapper.style.transform = ''; }, 200);
-                    // 1.5秒后恢复提示
-                    clearTimeout(clickTimeout);
-                    clickTimeout = setTimeout(() => {
-                        if (!isUnlocked) {
-                            lockStatus.textContent = `👆 连续点击 ${REQUIRED_CLICKS} 次（${clickCount}/${REQUIRED_CLICKS}）`;
-                            lockStatus.className = 'lock-status';
-                        }
-                    }, 1500);
                     return;
                 }
 
-                // 点击波纹
+                // 点击波纹（仅视觉反馈，无文字）
                 const rect = imageWrapper.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
@@ -545,32 +312,17 @@
                 ripple.style.marginLeft = '-15px';
                 ripple.style.marginTop = '-15px';
                 imageWrapper.appendChild(ripple);
-                setTimeout(() => ripple.remove(), 700);
+                setTimeout(() => ripple.remove(), 500);
 
                 // 增加计数
                 clickCount++;
 
-                // 超过6次重置
-                if (clickCount > REQUIRED_CLICKS) {
-                    resetLock();
-                    lockStatus.textContent = '⚠️ 已重置，请重新连续点击 6 次';
-                    lockStatus.className = 'lock-status error';
-                    return;
-                }
-
-                updateUI();
-
-                if (clickCount === REQUIRED_CLICKS) {
-                    lockStatus.textContent = '✅ 已点击 6 次，点击「验证」解锁';
-                    lockStatus.className = 'lock-status success';
-                }
-            }
-
-            // ----- 验证解锁 -----
-            function verifyUnlock() {
-                if (isUnlocked) {
+                // 达到6次 → 立即解锁
+                if (clickCount >= REQUIRED_CLICKS) {
+                    // 解锁：隐藏遮罩，显示主内容
                     overlay.classList.add('hidden');
                     mainContent.style.display = 'block';
+                    // 初始化代理页面
                     setTimeout(() => {
                         if (typeof initApp === 'function') {
                             initApp();
@@ -579,39 +331,24 @@
                     return;
                 }
 
-                if (clickCount === REQUIRED_CLICKS) {
-                    isUnlocked = true;
-                    updateUI();
-                    lockStatus.textContent = '🎉 解锁成功！正在进入...';
-                    lockStatus.className = 'lock-status success';
-                    setTimeout(() => {
-                        overlay.classList.add('hidden');
-                        mainContent.style.display = 'block';
-                        setTimeout(() => {
-                            if (typeof initApp === 'function') {
-                                initApp();
-                            }
-                        }, 100);
-                    }, 500);
-                } else {
-                    lockStatus.textContent = `⚠️ 还需要点击 ${REQUIRED_CLICKS - clickCount} 次`;
-                    lockStatus.className = 'lock-status error';
-                }
+                // 重置超时（如果超过2秒没点，重置计数）
+                clearTimeout(clickTimeout);
+                clickTimeout = setTimeout(() => {
+                    clickCount = 0;
+                }, 2000);
             }
 
             // ----- 绑定事件 -----
             imageWrapper.addEventListener('click', handleImageClick);
-            unlockBtn.addEventListener('click', verifyUnlock);
-            resetBtn.addEventListener('click', resetLock);
 
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !overlay.classList.contains('hidden')) {
-                    verifyUnlock();
-                }
-            });
+            // 触摸设备兼容
+            imageWrapper.addEventListener('touchstart', function(e) {
+                const touch = e.touches[0];
+                const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
+                handleImageClick(fakeEvent);
+                e.preventDefault();
+            }, { passive: false });
 
-            // 初始化
-            resetLock();
         })();
 
 
