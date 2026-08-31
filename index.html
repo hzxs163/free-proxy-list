@@ -166,17 +166,17 @@
     <script>
         // ==================== 数据源配置 ====================
         const DATA_SOURCES = {
+            local: {
+                url: 'proxy.txt',
+                label: '📡 数据源: 本地 (同目录)'
+            },
             github: {
                 url: 'https://gh-proxy.org/https://raw.githubusercontent.com/watchttvv/free-proxy-list/refs/heads/main/proxy.txt',
-                label: '📡 数据源: GitHub (原)'
-            },
-            hzxs: {
-                url: 'https://raw.githubusercontent.com/hzxs163/free-proxy-list/main/proxy.txt',
-                label: '📡 数据源: GitHub (hzxs163)'
+                label: '📡 数据源: GitHub (备用)'
             }
         };
-
-        let currentSource = 'github';
+        
+        let currentSource = 'local';
         let proxyItems = [];
         let isCheckingAll = false;
 
