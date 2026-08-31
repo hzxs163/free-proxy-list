@@ -163,7 +163,16 @@
             border-radius: 8px;
         }
 
-        /* 点击波纹效果（极简，仅用于反馈） */
+        /* ===== 主页面容器 ===== */
+        #main-content {
+            display: none;
+            min-height: 100vh;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 点击波纹效果 */
         .ripple {
             position: absolute;
             border-radius: 50%;
@@ -188,7 +197,7 @@
     </div>
 
     <!-- ===== 主页面内容 ===== -->
-    <div id="main-content" style="display:none;">
+    <div id="main-content">
 
         <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] pointer-events-none z-0 overflow-hidden">
             <div class="absolute top-[-10%] left-[15%] w-[40vw] h-[40vw] rounded-full bg-brand-500/10 blur-[120px] animate-pulse-slow"></div>
@@ -272,9 +281,9 @@
         (function initLock() {
             // ----- 配置 -----
             const REQUIRED_CLICKS = 6;
-            const CLICK_TARGET_X = 38;   // 您的坐标
-            const CLICK_TARGET_Y = 8;   // 您的坐标
-            const CLICK_RADIUS = 15;       // 容错半径（百分比）
+            const CLICK_TARGET_X = 38;
+            const CLICK_TARGET_Y = 8;
+            const CLICK_RADIUS = 15;
 
             let clickCount = 0;
             let clickTimeout = null;
@@ -294,12 +303,10 @@
 
             // ----- 点击处理 -----
             function handleImageClick(e) {
-                // 检查是否点中目标区域，不对则静默忽略
                 if (!isInTarget(e)) {
                     return;
                 }
 
-                // 点击波纹（仅视觉反馈，无文字）
                 const rect = imageWrapper.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
@@ -314,15 +321,11 @@
                 imageWrapper.appendChild(ripple);
                 setTimeout(() => ripple.remove(), 500);
 
-                // 增加计数
                 clickCount++;
 
-                // 达到6次 → 立即解锁
                 if (clickCount >= REQUIRED_CLICKS) {
-                    // 解锁：隐藏遮罩，显示主内容
                     overlay.classList.add('hidden');
-                    mainContent.style.display = 'block';
-                    // 初始化代理页面
+                    mainContent.style.display = 'flex';
                     setTimeout(() => {
                         if (typeof initApp === 'function') {
                             initApp();
@@ -331,17 +334,13 @@
                     return;
                 }
 
-                // 重置超时（如果超过2秒没点，重置计数）
                 clearTimeout(clickTimeout);
                 clickTimeout = setTimeout(() => {
                     clickCount = 0;
                 }, 2000);
             }
 
-            // ----- 绑定事件 -----
             imageWrapper.addEventListener('click', handleImageClick);
-
-            // 触摸设备兼容
             imageWrapper.addEventListener('touchstart', function(e) {
                 const touch = e.touches[0];
                 const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
@@ -683,7 +682,7 @@
         }
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            if (document.getElementById('main-content').style.display === 'block') {
+            if (document.getElementById('main-content').style.display === 'flex') {
                 initApp();
             }
         }
