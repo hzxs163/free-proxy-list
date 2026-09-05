@@ -1,18 +1,17 @@
 name: 更新代理列表
 
-# 添加权限配置
+# 权限配置（最小化原则）
 permissions:
   contents: write
-  actions: read
   pull-requests: write
-  issues: write
-  repository-projects: write
 
 on:
   schedule:
     # 每天早上7点和晚上7点更新代理列表（北京时间）
-    - cron: '0 23 * * *'  # 北京时间早上7点 (UTC 23:00)
-    - cron: '0 11 * * *'  # 北京时间晚上7点 (UTC 11:00)
+    # UTC 23:00 = 北京时间 07:00
+    # UTC 11:00 = 北京时间 19:00
+    - cron: '0 23 * * *'
+    - cron: '0 11 * * *'
   workflow_dispatch:
     # 允许手动触发
 
@@ -27,7 +26,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
         ref: main
-      
+        
     - name: 设置Python环境
       uses: actions/setup-python@v4
       with:
@@ -40,25 +39,42 @@ jobs:
         
     - name: 抓取代理列表
       run: |
-        echo "开始抓取代理列表..."
+        echo "⏰ 开始抓取代理列表: $(date '+%Y-%m-%d %H:%M:%S')"
         python generate_proxy_list.py
-        echo "抓取完成，检查文件是否生成..."
+        echo "✅ 抓取完成"
+        
+        # 检查文件是否生成
         if [ -f proxy.txt ]; then
-          echo "proxy.txt 文件已生成"
-          echo "文件内容预览："
+          echo "📄 proxy.txt 文件已生成"
+          echo "📊 文件内容预览："
           head -5 proxy.txt
+          echo ""
+          echo "📈 总行数: $(wc -l < proxy.txt)"
         else
-          echo "proxy.txt 文件未生成"
+          echo "❌ proxy.txt 文件未生成"
           exit 1
         fi
         
+    - name: 检查是否有变更
+      id: check_changes
+      run: |
+        if git diff --quiet proxy.txt; then
+          echo "changes=false" >> $GITHUB_OUTPUT
+          echo "ℹ️ 代理列表无变化，跳过提交"
+        else
+          echo "changes=true" >> $GITHUB_OUTPUT
+          echo "🔄 检测到变更，准备提交"
+        fi
+        
     - name: 提交更新
+      if: steps.check_changes.outputs.changes == 'true'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Action"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
         git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
         git add proxy.txt
-        git commit -m "更新代理列表" || echo "没有更改"
-        git push origin +main:main
+        git commit -m "🤖 更新代理列表 $(date '+%Y-%m-%d %H:%M:%S')"
+        git push origin main
+        echo "✅ 已提交更新"
