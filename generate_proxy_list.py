@@ -8,21 +8,54 @@ from datetime import datetime, timezone, timedelta
 
 class ProxyListScraper:
     def __init__(self):
-        self.url = "https://proxy-socks5.com/proxy_list"
+        self.base_url = "https://proxy-socks5.com"
+        self.login_url = "https://proxy-socks5.com/login"
+        self.proxy_url = "https://proxy-socks5.com/proxy_list"
+        # ★ 在这里填您的账号密码
+        self.username = "hzxs55555"
+        self.password = "hzxs55555"
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
+        self.session = requests.Session()
+
+    def login(self):
+        """登录 proxy-socks5.com"""
+        try:
+            print(f"正在登录: {self.login_url}")
+            login_data = {
+                'username': self.username,
+                'password': self.password,
+            }
+            resp = self.session.post(
+                self.login_url,
+                data=login_data,
+                headers=self.headers,
+                timeout=30,
+                allow_redirects=True
+            )
+
+            # 判断是否登录成功：检查响应中是否包含用户信息或跳转到了主页
+            if '登录' in resp.text and 'logout' not in resp.text.lower():
+                print("❌ 登录失败，请检查账号密码")
+                return False
+
+            print("✅ 登录成功")
+            return True
+
+        except Exception as e:
+            print(f"登录错误: {e}")
+            return False
 
     def scrape_proxy_list(self):
-        """抓取代理列表"""
+        """抓取代理列表（登录后）"""
         try:
-            print(f"正在抓取代理列表: {self.url}")
-            response = requests.get(self.url, headers=self.headers, timeout=30)
+            print(f"正在抓取代理列表: {self.proxy_url}")
+            response = self.session.get(self.proxy_url, headers=self.headers, timeout=30)
             response.raise_for_status()
             response.encoding = 'utf-8'
 
             soup = BeautifulSoup(response.text, 'html.parser')
-
             table = soup.find('table')
             if not table:
                 print("未找到代理数据表格")
@@ -38,15 +71,10 @@ class ProxyListScraper:
                     ip = cells[1].text.strip()
                     port = cells[2].text.strip()
                     location = cells[3].text.strip() if len(cells) > 3 else "未知"
-
-                    # 清理位置信息
                     location = location.replace('复制', '').replace('已复制', '').replace('已', '').strip()
                     location = ' '.join(location.split())
-
-                    # 清理 protocol
                     protocol = protocol.split()[0] if protocol else ''
 
-                    # 清理 IP 和端口
                     if ' ' in ip:
                         ip = ip.split()[-1]
                     if ':' in ip:
@@ -71,9 +99,6 @@ class ProxyListScraper:
             print(f"成功抓取到 {len(proxies)} 个代理")
             return proxies
 
-        except requests.RequestException as e:
-            print(f"网络请求错误: {e}")
-            return []
         except Exception as e:
             print(f"抓取错误: {e}")
             return []
@@ -81,7 +106,6 @@ class ProxyListScraper:
     def save_to_file(self, proxies, filename='proxy.txt'):
         """保存代理列表到文件"""
         try:
-            # 北京时间
             beijing_tz = timezone(timedelta(hours=8))
             now = datetime.now(beijing_tz)
             time_str = now.strftime('%m-%d %H:%M')
@@ -93,7 +117,6 @@ class ProxyListScraper:
                 f.write(f"# 最好用的代理资源\n\n")
 
                 for p in proxies:
-                    # 格式：协议://ip:port        入库时间：XX-XX XX:XX	[位置]
                     line = f"{p['protocol']}://{p['ip']}:{p['port']}        入库时间：{time_str}\t{p['location']}"
                     f.write(f"{line}\n")
 
@@ -107,13 +130,17 @@ class ProxyListScraper:
 
 def main():
     scraper = ProxyListScraper()
-    proxies = scraper.scrape_proxy_list()
 
+    if not scraper.login():
+        print("❌ 登录失败，退出")
+        return
+
+    proxies = scraper.scrape_proxy_list()
     if proxies:
         scraper.save_to_file(proxies)
-        print("代理列表抓取完成！")
+        print("✅ 代理列表抓取完成！")
     else:
-        print("未能获取到代理数据")
+        print("❌ 未能获取到代理数据")
 
 
 if __name__ == "__main__":
