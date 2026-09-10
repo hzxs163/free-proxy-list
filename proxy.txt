@@ -1,33 +1,120 @@
-# 代理列表更新时间: 2026-09-10 04:34:32
-# 总计: 30 个代理
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-socks5://171.252.X.168:1080 [[家宽] [原生IP] 越南 岘港市 岘港 入库:09-10 12:27]
-socks5://45.9.X.162:1081 [[家宽] [原生IP] 俄罗斯 圣彼得堡 圣彼得堡 入库:09-10 11:38]
-socks5://107.189.X.28:1080 [[机房] 荷兰 北荷兰省 赞丹 入库:09-10 11:12]
-socks5://77.110.X.87:10808 [[机房] 芬兰 新地区 赫尔辛基 入库:09-10 11:02]
-socks5://163.5.X.93:11080 [[机房] 德国 黑森州 林堡-安-德尔-拉恩 — OVH 入库:09-10 09:19]
-socks5://79.40.X.160:1080 [[家宽] [原生IP] 意大利 皮埃蒙特 都灵 入库:09-10 08:21]
-socks5://122.5.X.10:1080 [[家宽] [原生IP] 中国 台湾 台北市 入库:09-10 08:09]
-socks5://109.197.X.133:1080 [[家宽] [原生IP] 俄罗斯 楚科奇自治区 阿纳德尔 入库:09-10 08:09]
-socks5://3.221.X.143:1080 [[机房] [原生IP] 美国 弗吉尼亚州 阿什本 — 亚马逊云 Aws 入库:09-10 07:22]
-socks5://113.250.X.33:1088 [[机房] 中国 香港 香港 — 阿里云 入库:09-10 06:46]
-http://171.245.X.198:50001 [[家宽] [原生IP] 越南 广宁省 下龙 入库:09-10 11:51]
-http://171.245.X.201:50001 [[家宽] [原生IP] 越南 广宁省 下龙 入库:09-10 11:51]
-http://171.245.X.224:50001 [[家宽] [原生IP] 越南 广宁省 下龙 入库:09-10 11:51]
-http://171.245.X.204:50001 [[家宽] [原生IP] 越南 广宁省 下龙 入库:09-10 11:51]
-http://171.245.X.209:50001 [[家宽] [原生IP] 越南 广宁省 下龙 入库:09-10 11:51]
-http://171.245.X.225:50001 [[家宽] [原生IP] 越南 广宁省 下龙 入库:09-10 11:51]
-http://171.245.X.217:50001 [[家宽] [原生IP] 越南 广宁省 下龙 入库:09-10 11:51]
-http://171.245.X.218:50001 [[家宽] [原生IP] 越南 广宁省 下龙 入库:09-10 11:51]
-http://186.146.X.8:999 [[家宽] [原生IP] 哥伦比亚 考卡山谷省 卡利 入库:09-10 11:46]
-http://188.240.X.53:8080 [[家宽] [原生IP] 也门 塔伊兹省 塔伊兹 入库:09-10 10:49]
-https://52.209.X.190:443 [[机房] 爱尔兰 伦斯特 都柏林 — 亚马逊云 Aws 入库:09-10 12:02]
-https://35.159.X.223:443 [[机房] 德国 黑森州 法兰克福 — 亚马逊云 Aws 入库:09-10 11:39]
-https://162.191.X.120:9443 [[家宽] [原生IP] 美国 伊利诺伊州 芝加哥 入库:09-10 11:08]
-https://162.191.X.201:9443 [[家宽] [原生IP] 美国 伊利诺伊州 芝加哥 入库:09-10 11:08]
-https://38.96.X.29:443 [[家宽] [原生IP] 美国 新泽西州 威霍肯 入库:09-10 10:31]
-https://185.68.X.63:443 [[机房] 意大利 伦巴第大区 米兰 入库:09-10 10:25]
-https://18.202.X.48:443 [[机房] 爱尔兰 伦斯特 都柏林 — 亚马逊云 Aws 入库:09-10 10:14]
-https://34.241.X.197:443 [[机房] 爱尔兰 伦斯特 都柏林 — 亚马逊云 Aws 入库:09-10 08:20]
-https://185.10.X.95:9443 [[机房] 伊朗 德黑兰省 德黑兰 入库:09-10 07:47]
-https://150.230.X.147:443 [[机房] 美国 加利福尼亚州 圣何塞 — 甲骨文云 Oracle 入库:09-10 07:07]
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime, timezone, timedelta
+
+
+class ProxyListScraper:
+    def __init__(self):
+        self.url = "https://proxy-socks5.com/proxy_list"
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+
+    def scrape_proxy_list(self):
+        """抓取代理列表"""
+        try:
+            print(f"正在抓取代理列表: {self.url}")
+            response = requests.get(self.url, headers=self.headers, timeout=30)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            table = soup.find('table')
+            if not table:
+                print("未找到代理数据表格")
+                return []
+
+            proxies = []
+            rows = table.find_all('tr')[1:]
+
+            for row in rows:
+                cells = row.find_all('td')
+                if len(cells) >= 4:
+                    protocol = cells[0].text.strip()
+                    ip = cells[1].text.strip()
+                    port = cells[2].text.strip()
+                    location = cells[3].text.strip() if len(cells) > 3 else "未知"
+
+                    # 清理位置信息
+                    location = location.replace('复制', '').replace('已复制', '').replace('已', '').strip()
+                    location = ' '.join(location.split())
+
+                    # 清理 protocol
+                    protocol = protocol.split()[0] if protocol else ''
+
+                    # 清理 IP 和端口
+                    if ' ' in ip:
+                        ip = ip.split()[-1]
+                    if ':' in ip:
+                        parts = ip.rsplit(':', 2)
+                        if len(parts) == 3:
+                            ip = parts[0]
+                            port = parts[1]
+                        elif len(parts) == 2:
+                            ip = parts[0]
+                            port = parts[1]
+
+                    port = port.split(':')[0] if ':' in port else port
+
+                    if protocol and ip and port:
+                        proxies.append({
+                            'protocol': protocol,
+                            'ip': ip,
+                            'port': port,
+                            'location': location
+                        })
+
+            print(f"成功抓取到 {len(proxies)} 个代理")
+            return proxies
+
+        except requests.RequestException as e:
+            print(f"网络请求错误: {e}")
+            return []
+        except Exception as e:
+            print(f"抓取错误: {e}")
+            return []
+
+    def save_to_file(self, proxies, filename='proxy.txt'):
+        """保存代理列表到文件"""
+        try:
+            # 北京时间
+            beijing_tz = timezone(timedelta(hours=8))
+            now = datetime.now(beijing_tz)
+            time_str = now.strftime('%m-%d %H:%M')
+
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(f"# 代理列表更新时间: {now.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"# 总计: {len(proxies)} 个代理\n")
+                f.write(f"# 实时抓取于免费公共代理池: https://proxy-socks5.com\n")
+                f.write(f"# 最好用的代理资源\n\n")
+
+                for p in proxies:
+                    # 格式：协议://ip:port        入库时间：XX-XX XX:XX	[位置]
+                    line = f"{p['protocol']}://{p['ip']}:{p['port']}        入库时间：{time_str}\t{p['location']}"
+                    f.write(f"{line}\n")
+
+            print(f"代理列表已保存到 {filename}")
+            return True
+
+        except Exception as e:
+            print(f"保存文件错误: {e}")
+            return False
+
+
+def main():
+    scraper = ProxyListScraper()
+    proxies = scraper.scrape_proxy_list()
+
+    if proxies:
+        scraper.save_to_file(proxies)
+        print("代理列表抓取完成！")
+    else:
+        print("未能获取到代理数据")
+
+
+if __name__ == "__main__":
+    main()
