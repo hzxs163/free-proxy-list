@@ -3,7 +3,8 @@
 
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
 
 class ProxyListScraper:
     def __init__(self):
@@ -22,14 +23,13 @@ class ProxyListScraper:
 
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # 查找包含代理数据的表格
             table = soup.find('table')
             if not table:
                 print("未找到代理数据表格")
                 return []
 
             proxies = []
-            rows = table.find_all('tr')[1:]  # 跳过表头
+            rows = table.find_all('tr')[1:]
 
             for row in rows:
                 cells = row.find_all('td')
@@ -43,10 +43,10 @@ class ProxyListScraper:
                     location = location.replace('复制', '').replace('已复制', '').replace('已', '').strip()
                     location = ' '.join(location.split())
 
-                    # 清理 protocol（去掉多余内容）
+                    # 清理 protocol
                     protocol = protocol.split()[0] if protocol else ''
 
-                    # 清理 IP 和端口（处理 "socks5 171.252.X.168:1080:1080" 这种格式）
+                    # 清理 IP 和端口
                     if ' ' in ip:
                         ip = ip.split()[-1]
                     if ':' in ip:
@@ -58,12 +58,15 @@ class ProxyListScraper:
                             ip = parts[0]
                             port = parts[1]
 
-                    # 清理端口（去掉重复）
                     port = port.split(':')[0] if ':' in port else port
 
                     if protocol and ip and port:
-                        proxy = f"{protocol}://{ip}:{port} [{location}]"
-                        proxies.append(proxy)
+                        proxies.append({
+                            'protocol': protocol,
+                            'ip': ip,
+                            'port': port,
+                            'location': location
+                        })
 
             print(f"成功抓取到 {len(proxies)} 个代理")
             return proxies
@@ -78,11 +81,21 @@ class ProxyListScraper:
     def save_to_file(self, proxies, filename='proxy.txt'):
         """保存代理列表到文件"""
         try:
+            # 北京时间
+            beijing_tz = timezone(timedelta(hours=8))
+            now = datetime.now(beijing_tz)
+            time_str = now.strftime('%m-%d %H:%M')
+
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write(f"# 代理列表更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write(f"# 总计: {len(proxies)} 个代理\n\n")
-                for proxy in proxies:
-                    f.write(f"{proxy}\n")
+                f.write(f"# 代理列表更新时间: {now.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"# 总计: {len(proxies)} 个代理\n")
+                f.write(f"# 实时抓取于免费公共代理池: https://proxy-socks5.com\n")
+                f.write(f"# 最好用的代理资源\n\n")
+
+                for p in proxies:
+                    # 格式：协议://ip:port        入库时间：XX-XX XX:XX	[位置]
+                    line = f"{p['protocol']}://{p['ip']}:{p['port']}        入库时间：{time_str}\t{p['location']}"
+                    f.write(f"{line}\n")
 
             print(f"代理列表已保存到 {filename}")
             return True
@@ -93,7 +106,6 @@ class ProxyListScraper:
 
 
 def main():
-    """主函数"""
     scraper = ProxyListScraper()
     proxies = scraper.scrape_proxy_list()
 
