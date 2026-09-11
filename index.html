@@ -397,7 +397,7 @@
 
                     if (currentPage === 'mtproto') {
                         // ===== MTProto 数据源 =====
-                        const resp = await fetch('https://www.mtproto.shop/proxies.json');
+                        const resp = await fetch('https://seep.eu.org/https://www.mtproto.shop/proxies.json');
                         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                         const data = await resp.json();
 
