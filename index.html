@@ -85,12 +85,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        .clickable-icon:hover {
-            transform: scale(1.05);
-        }
-        .clickable-icon:active {
-            transform: scale(0.95);
-        }
+        .clickable-icon:hover { transform: scale(1.05); }
+        .clickable-icon:active { transform: scale(0.95); }
 
         .page-tab {
             cursor: pointer;
@@ -123,9 +119,7 @@
             background: rgba(255,255,255,0.08);
             border-color: rgba(255,255,255,0.15);
         }
-        .source-label-clickable:active {
-            transform: scale(0.95);
-        }
+        .source-label-clickable:active { transform: scale(0.95); }
 
         /* ===== 图片解锁遮罩 ===== */
         #lock-overlay {
@@ -163,7 +157,6 @@
             border-radius: 8px;
         }
 
-        /* ===== 主页面容器 ===== */
         #main-content {
             display: none;
             min-height: 100vh;
@@ -172,7 +165,6 @@
             align-items: center;
         }
 
-        /* 点击波纹效果 */
         .ripple {
             position: absolute;
             border-radius: 50%;
@@ -185,11 +177,15 @@
             0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
         }
+
+        .mtproto-flag { font-size: 16px; margin-right: 4px; }
+        .mtproto-ping { font-size: 9px; color: #34d399; }
+        .mtproto-speed { font-size: 9px; color: #60a5fa; }
     </style>
 </head>
 <body>
 
-    <!-- ===== 图片解锁遮罩（仅一张图） ===== -->
+    <!-- ===== 图片解锁遮罩 ===== -->
     <div id="lock-overlay">
         <div class="image-wrapper" id="imageWrapper">
             <img src="pic.jpg" alt="解锁图片" id="unlockImage">
@@ -209,13 +205,14 @@
             <header class="flex flex-col items-center text-center mb-8">
                 <div class="relative group mb-4">
                     <div class="absolute inset-0 bg-gradient-to-r from-brand-500 to-cyan-400 rounded-2xl blur opacity-40 group-hover:opacity-60 transition duration-500"></div>
-                    <div id="switchPage" class="relative w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center clickable-icon" title="点击切换 SOCKS5 / HTTP">
+                    <div id="switchPage" class="relative w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center clickable-icon" title="点击切换页面">
                         <i class="fab fa-telegram-plane text-3xl text-brand-500 transition-transform group-hover:scale-110 duration-300"></i>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 mt-1">
+                <div class="flex items-center gap-2 mt-1 flex-wrap justify-center">
                     <span id="pageTabSocks5" class="page-tab active">SOCKS5</span>
                     <span id="pageTabHttp" class="page-tab inactive">HTTP</span>
+                    <span id="pageTabMtproto" class="page-tab inactive">MTProto</span>
                     <span class="w-px h-4 bg-slate-700 mx-1"></span>
                     <span id="dataSourceLabel" class="text-[10px] font-mono text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-white/5 source-label-clickable" title="点击切换数据源">📡 数据源: 本地</span>
                 </div>
@@ -276,10 +273,9 @@
 
     <script>
         // ================================================================
-        //  第一部分：图片连续点击解锁（纯图片，无任何文字提示）
+        //  第一部分：图片连续点击解锁
         // ================================================================
         (function initLock() {
-            // ----- 配置 -----
             const REQUIRED_CLICKS = 6;
             const CLICK_TARGET_X = 38;
             const CLICK_TARGET_Y = 8;
@@ -292,7 +288,6 @@
             const mainContent = document.getElementById('main-content');
             const imageWrapper = document.getElementById('imageWrapper');
 
-            // ----- 检查点击是否在目标区域 -----
             function isInTarget(e) {
                 const rect = imageWrapper.getBoundingClientRect();
                 const x = ((e.clientX - rect.left) / rect.width * 100);
@@ -301,11 +296,8 @@
                 return dist <= CLICK_RADIUS;
             }
 
-            // ----- 点击处理 -----
             function handleImageClick(e) {
-                if (!isInTarget(e)) {
-                    return;
-                }
+                if (!isInTarget(e)) return;
 
                 const rect = imageWrapper.getBoundingClientRect();
                 const x = e.clientX - rect.left;
@@ -327,27 +319,21 @@
                     overlay.classList.add('hidden');
                     mainContent.style.display = 'flex';
                     setTimeout(() => {
-                        if (typeof initApp === 'function') {
-                            initApp();
-                        }
+                        if (typeof initApp === 'function') initApp();
                     }, 100);
                     return;
                 }
 
                 clearTimeout(clickTimeout);
-                clickTimeout = setTimeout(() => {
-                    clickCount = 0;
-                }, 2000);
+                clickTimeout = setTimeout(() => { clickCount = 0; }, 2000);
             }
 
             imageWrapper.addEventListener('click', handleImageClick);
             imageWrapper.addEventListener('touchstart', function(e) {
                 const touch = e.touches[0];
-                const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
-                handleImageClick(fakeEvent);
+                handleImageClick({ clientX: touch.clientX, clientY: touch.clientY });
                 e.preventDefault();
             }, { passive: false });
-
         })();
 
 
@@ -373,19 +359,22 @@
 
             const tabSocks5 = document.getElementById('pageTabSocks5');
             const tabHttp = document.getElementById('pageTabHttp');
+            const tabMtproto = document.getElementById('pageTabMtproto');
             const sourceLabel = document.getElementById('dataSourceLabel');
             const switchPageBtn = document.getElementById('switchPage');
 
+            // ==================== 切换页面 ====================
             function switchPage(page) {
                 if (page === currentPage) return;
                 currentPage = page;
                 tabSocks5.className = `page-tab ${page === 'socks5' ? 'active' : 'inactive'}`;
                 tabHttp.className = `page-tab ${page === 'http' ? 'active' : 'inactive'}`;
-                renderProxyNodes(proxyItems);
-                updateStats();
-                showToast(`📄 切换到 ${page === 'socks5' ? 'SOCKS5' : 'HTTP'} 列表`);
+                tabMtproto.className = `page-tab ${page === 'mtproto' ? 'active' : 'inactive'}`;
+                fetchProxies();
+                showToast(`📄 切换到 ${page === 'socks5' ? 'SOCKS5' : page === 'http' ? 'HTTP' : 'MTProto'} 列表`);
             }
 
+            // ==================== 切换数据源 ====================
             function switchDataSource() {
                 currentSource = currentSource === 'local' ? 'github' : 'local';
                 sourceLabel.textContent = DATA_SOURCES[currentSource].label;
@@ -393,6 +382,7 @@
                 showToast(`🔄 已切换到 ${DATA_SOURCES[currentSource].label.replace('📡 数据源: ', '')}`);
             }
 
+            // ==================== 获取代理数据 ====================
             async function fetchProxies() {
                 const listContainer = document.getElementById('proxy-list');
                 const statusSpan = document.getElementById('statusText');
@@ -403,29 +393,49 @@
                 `).join('');
 
                 try {
+                    let proxyUrls = [];
+
+                    if (currentPage === 'mtproto') {
+                        // ===== MTProto 数据源 =====
+                        const resp = await fetch('https://www.mtproto.shop/proxies.json');
+                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                        const data = await resp.json();
+
+                        proxyItems = data.proxies.map((p, index) => ({
+                            id: index,
+                            url: p.link,
+                            status: 'idle',
+                            latency: p.ping || null,
+                            server: p.server,
+                            port: p.port,
+                            location: p.location,
+                            flag: p.flag,
+                            speed: p.speed,
+                            tgLink: p.link,
+                            protocol: 'MTPROTO'
+                        }));
+
+                        statusSpan.innerHTML = `🟢 节点可用: ${proxyItems.length}`;
+                        renderProxyNodes(proxyItems);
+                        updateStats();
+                        return;
+                    }
+
+                    // ===== SOCKS5 / HTTP 数据源 =====
                     const url = DATA_SOURCES[currentSource].url;
                     const response = await fetch(url);
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const text = await response.text();
 
                     const lines = text.split('\n');
-                    const proxyUrls = [];
-
                     for (const line of lines) {
                         const trimmed = line.trim();
                         if (!trimmed || trimmed.startsWith('#')) continue;
-                        const match = trimmed.match(/^(socks5|http|https):\/\/[^:\s]+:\d+/i);
-                        if (match) {
-                            const rawProxy = match[0];
-                            if (!/x/i.test(rawProxy)) {
-                                proxyUrls.push(rawProxy);
-                            }
-                        }
+                        const match = trimmed.match(/^(socks5|http|https):\/\/[^\s:]+:\d+/i);
+                        if (match) proxyUrls.push(match[0]);
                     }
 
-                    if (proxyUrls.length === 0) {
-                        throw new Error('未匹配到任何代理节点');
-                    }
+                    if (proxyUrls.length === 0) throw new Error('未匹配到任何代理节点');
 
                     proxyItems = proxyUrls.map((url, index) => ({
                         id: index,
@@ -434,7 +444,8 @@
                         latency: null,
                         server: extractServer(url),
                         port: extractPort(url),
-                        tgLink: convertToTgLink(url)
+                        tgLink: convertToTgLink(url),
+                        protocol: getProtocolLabel(url)
                     }));
 
                     statusSpan.innerHTML = `🟢 节点可用: ${proxyItems.length}`;
@@ -455,37 +466,32 @@
                 }
             }
 
+            // ==================== 工具函数 ====================
             function extractServer(url) {
-                try { const urlObj = new URL(url); return urlObj.hostname; } catch {
-                    const match = url.match(/\/\/([^:]+):/);
-                    return match ? match[1] : 'Unknown';
+                try { return new URL(url).hostname; } catch {
+                    const m = url.match(/\/\/([^:]+):/);
+                    return m ? m[1] : 'Unknown';
                 }
             }
-
             function extractPort(url) {
-                try { const urlObj = new URL(url); return urlObj.port || '80'; } catch {
-                    const match = url.match(/:(\d+)(?:\?|$)/);
-                    return match ? match[1] : '80';
+                try { return new URL(url).port || '80'; } catch {
+                    const m = url.match(/:(\d+)(?:\?|$)/);
+                    return m ? m[1] : '80';
                 }
             }
-
             function convertToTgLink(socksUrl) {
                 if (!socksUrl.startsWith('socks5://')) return socksUrl;
                 const url = socksUrl.replace(/^socks5:\/\//i, '');
                 const [hostport] = url.split('?');
                 const [server, port] = hostport.split(':');
-                const userEncoded = encodeURIComponent('TG频道@stymei');
-                const passEncoded = encodeURIComponent('TG频道@stymei');
-                return `tg://socks?server=${encodeURIComponent(server)}&port=${encodeURIComponent(port)}&user=${userEncoded}&pass=${passEncoded}`;
+                return `tg://socks?server=${encodeURIComponent(server)}&port=${encodeURIComponent(port)}&user=${encodeURIComponent('TG频道@stymei')}&pass=${encodeURIComponent('TG频道@stymei')}`;
             }
-
             function getProtocolLabel(url) {
                 if (url.startsWith('socks5://')) return 'SOCKS5';
                 if (url.startsWith('https://')) return 'HTTPS';
                 if (url.startsWith('http://')) return 'HTTP';
                 return 'UNKNOWN';
             }
-
             function getStatusBadge(status) {
                 const map = {
                     'idle': { label: '待测', class: 'idle' },
@@ -496,59 +502,57 @@
                 return map[status] || map['idle'];
             }
 
+            // ==================== 渲染 ====================
             function renderProxyNodes(items) {
                 const list = document.getElementById('proxy-list');
 
                 let filtered = items;
                 if (currentPage === 'socks5') {
-                    filtered = items.filter(item => item.url.startsWith('socks5://'));
+                    filtered = items.filter(i => i.url.startsWith('socks5://') || i.protocol === 'MTPROTO');
+                } else if (currentPage === 'http') {
+                    filtered = items.filter(i => i.url.startsWith('http://') || i.url.startsWith('https://'));
                 } else {
-                    filtered = items.filter(item => item.url.startsWith('http://') || item.url.startsWith('https://'));
+                    filtered = items.filter(i => i.protocol === 'MTPROTO');
                 }
 
                 if (!filtered.length) {
-                    list.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">暂无 ${currentPage === 'socks5' ? 'SOCKS5' : 'HTTP/HTTPS'} 类型节点</div>`;
+                    list.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">暂无节点</div>`;
                     return;
                 }
 
                 list.innerHTML = filtered.map((item, idx) => {
                     const displayIp = item.server.length > 22 ? item.server.substring(0, 20) + '...' : item.server;
-                    const statusClass = item.status === 'valid' ? 'valid' : item.status === 'invalid' ? 'invalid' : '';
                     const statusBadge = getStatusBadge(item.status);
-                    const isSocks5 = item.url.startsWith('socks5://');
+                    const isMtproto = item.protocol === 'MTPROTO';
 
                     return `
-                        <div class="proxy-item group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-500/30 rounded-xl p-3.5 flex items-center justify-between transition-all duration-300 ${statusClass}" data-id="${item.id}">
+                        <div class="proxy-item group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-500/30 rounded-xl p-3.5 flex items-center justify-between transition-all duration-300" data-id="${item.id}">
                             <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-9 h-9 rounded-lg bg-slate-800 border border-white/5 flex items-center justify-center font-mono text-xs font-bold text-slate-400 group-hover:text-brand-500 group-hover:border-brand-500/20 transition-colors">
+                                <div class="w-9 h-9 rounded-lg bg-slate-800 border border-white/5 flex items-center justify-center font-mono text-xs font-bold text-slate-400">
                                     ${String(idx + 1).padStart(2, '0')}
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5 flex-wrap">
-                                        <span class="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">${getProtocolLabel(item.url)}</span>
+                                        <span class="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">${item.protocol}</span>
                                         <span class="w-1 h-1 rounded-full bg-cyan-400"></span>
                                         <span class="text-[9px] font-mono text-slate-400">PORT:${item.port}</span>
                                         <span class="status-badge ${statusBadge.class}">${statusBadge.label}</span>
-                                        ${item.latency ? `<span class="text-[9px] text-slate-500">${item.latency}ms</span>` : ''}
+                                        ${item.latency ? `<span class="mtproto-ping">${item.latency}</span>` : ''}
+                                        ${item.speed ? `<span class="mtproto-speed">${item.speed}</span>` : ''}
                                     </div>
-                                    <p class="text-sm font-mono font-bold text-slate-200 mt-0.5 truncate select-all" title="${item.server}">${displayIp}</p>
+                                    <p class="text-sm font-mono font-bold text-slate-200 mt-0.5 truncate select-all">
+                                        ${isMtproto ? `<span class="mtproto-flag">${item.flag || ''}</span>${item.location || displayIp}` : displayIp}
+                                    </p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button onclick="checkSingleProxy(${item.id})" class="p-2 text-slate-400 hover:text-slate-200 bg-white/0 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5 transition-all" title="检测此节点">
-                                    <i class="fas fa-sync text-xs ${item.status === 'checking' ? 'fa-spin' : ''}"></i>
-                                </button>
                                 <button onclick="copyRawLink(event, '${item.tgLink}')" class="p-2 text-slate-400 hover:text-slate-200 bg-white/0 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5 transition-all" title="复制链接">
                                     <i class="far fa-copy text-xs"></i>
                                 </button>
-                                ${isSocks5 ? `
                                 <button onclick="connectProxy('${item.tgLink.replace(/'/g, "\\'")}')" class="px-3.5 py-1.5 text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white rounded-lg shadow-lg shadow-brand-500/10 flex items-center gap-1 transition-all active:scale-95">
                                     <span>连接</span>
                                     <i class="fas fa-chevron-right text-[10px] opacity-70"></i>
                                 </button>
-                                ` : `
-                                <span class="px-2 py-1 text-[9px] text-slate-500 bg-slate-800/50 rounded-lg border border-white/5">仅HTTP</span>
-                                `}
                             </div>
                         </div>
                     `;
@@ -558,49 +562,36 @@
             function updateStats() {
                 let filtered = proxyItems;
                 if (currentPage === 'socks5') {
-                    filtered = proxyItems.filter(item => item.url.startsWith('socks5://'));
+                    filtered = proxyItems.filter(i => i.url.startsWith('socks5://'));
+                } else if (currentPage === 'http') {
+                    filtered = proxyItems.filter(i => i.url.startsWith('http://') || i.url.startsWith('https://'));
                 } else {
-                    filtered = proxyItems.filter(item => item.url.startsWith('http://') || item.url.startsWith('https://'));
+                    filtered = proxyItems.filter(i => i.protocol === 'MTPROTO');
                 }
-                const total = filtered.length;
-                const valid = filtered.filter(p => p.status === 'valid').length;
-                document.getElementById('proxyCount').textContent = total;
-                document.getElementById('validCount').textContent = valid;
+                document.getElementById('proxyCount').textContent = filtered.length;
+                document.getElementById('validCount').textContent = filtered.filter(p => p.status === 'valid').length;
             }
 
+            // ==================== 检测 ====================
             async function checkSingleProxy(id) {
                 const item = proxyItems.find(p => p.id === id);
                 if (!item || item.status === 'checking') return;
-
                 item.status = 'checking';
-                item.latency = null;
                 renderProxyNodes(proxyItems);
                 updateStats();
-
                 try {
-                    const startTime = performance.now();
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-                    await fetch(`https://httpbin.org/delay/1`, {
-                        signal: controller.signal,
-                    });
-
-                    clearTimeout(timeoutId);
-                    const endTime = performance.now();
-                    const latency = Math.round(endTime - startTime);
-
+                    const start = performance.now();
+                    const ctrl = new AbortController();
+                    const tid = setTimeout(() => ctrl.abort(), 5000);
+                    await fetch('https://httpbin.org/delay/1', { signal: ctrl.signal });
+                    clearTimeout(tid);
                     item.status = 'valid';
-                    item.latency = latency;
-                    showToast(`✅ 节点 ${item.server} 可用 (${latency}ms)`);
-
-                } catch (error) {
-                    console.warn(`节点 ${item.server} 检测失败:`, error.message);
+                    item.latency = Math.round(performance.now() - start) + 'ms';
+                    showToast(`✅ 节点 ${item.server} 可用`);
+                } catch (e) {
                     item.status = 'invalid';
-                    item.latency = null;
                     showToast(`❌ 节点 ${item.server} 不可用`);
                 }
-
                 renderProxyNodes(proxyItems);
                 updateStats();
             }
@@ -608,73 +599,53 @@
             async function checkAllProxies() {
                 if (isCheckingAll) return;
                 isCheckingAll = true;
-
                 const btn = document.getElementById('checkAllBtn');
                 btn.innerHTML = '<span class="checking-spinner"></span><span>检测中...</span>';
                 btn.disabled = true;
-
-                let targetItems = proxyItems;
-                if (currentPage === 'socks5') {
-                    targetItems = proxyItems.filter(item => item.url.startsWith('socks5://'));
-                } else {
-                    targetItems = proxyItems.filter(item => item.url.startsWith('http://') || item.url.startsWith('https://'));
-                }
-
-                const promises = targetItems.map(item => checkSingleProxy(item.id));
-                await Promise.allSettled(promises);
-
+                const target = proxyItems.filter(i => currentPage === 'socks5' ? i.url.startsWith('socks5://') : currentPage === 'http' ? (i.url.startsWith('http://') || i.url.startsWith('https://')) : i.protocol === 'MTPROTO');
+                await Promise.allSettled(target.map(i => checkSingleProxy(i.id)));
                 isCheckingAll = false;
                 btn.innerHTML = '<i class="fas fa-heartbeat text-[10px]"></i><span>检测全部</span>';
                 btn.disabled = false;
-
-                const validCount = targetItems.filter(p => p.status === 'valid').length;
-                showToast(`✅ 检测完成，${validCount}/${targetItems.length} 个节点可用`);
+                showToast(`✅ 检测完成`);
             }
 
-            function showToast(message) {
-                const toast = document.getElementById('toast');
-                document.getElementById('toast-msg').innerText = message;
-                toast.classList.remove('opacity-0', '-translate-y-2');
-                toast.classList.add('opacity-100', 'translate-y-0');
-                clearTimeout(toast._hideTimer);
-                toast._hideTimer = setTimeout(() => {
-                    toast.classList.remove('opacity-100', 'translate-y-0');
-                    toast.classList.add('opacity-0', '-translate-y-2');
+            // ==================== UI ====================
+            function showToast(msg) {
+                const t = document.getElementById('toast');
+                document.getElementById('toast-msg').innerText = msg;
+                t.classList.remove('opacity-0', '-translate-y-2');
+                t.classList.add('opacity-100', 'translate-y-0');
+                clearTimeout(t._hideTimer);
+                t._hideTimer = setTimeout(() => {
+                    t.classList.remove('opacity-100', 'translate-y-0');
+                    t.classList.add('opacity-0', '-translate-y-2');
                 }, 2500);
             }
-
             window.copyRawLink = function(event, link) {
                 event.stopPropagation();
                 navigator.clipboard.writeText(link);
-                showToast('代理配置已复制到剪贴板');
+                showToast('已复制到剪贴板');
             };
-
             window.connectProxy = function(tgUrl) {
                 navigator.clipboard.writeText(tgUrl);
-                showToast('已复制配置，正在呼叫 Telegram...');
-                setTimeout(() => {
-                    window.location.href = tgUrl;
-                }, 400);
+                showToast('正在呼叫 Telegram...');
+                setTimeout(() => { window.location.href = tgUrl; }, 400);
             };
-
             window.checkSingleProxy = checkSingleProxy;
             window.fetchProxies = fetchProxies;
 
+            // ==================== 事件绑定 ====================
             switchPageBtn.addEventListener('click', () => {
-                const nextPage = currentPage === 'socks5' ? 'http' : 'socks5';
-                switchPage(nextPage);
+                const order = ['socks5', 'http', 'mtproto'];
+                const next = order[(order.indexOf(currentPage) + 1) % order.length];
+                switchPage(next);
             });
-
             tabSocks5.addEventListener('click', () => switchPage('socks5'));
             tabHttp.addEventListener('click', () => switchPage('http'));
-
+            tabMtproto.addEventListener('click', () => switchPage('mtproto'));
             sourceLabel.addEventListener('click', switchDataSource);
-
-            document.getElementById('refreshBtn').addEventListener('click', (e) => {
-                e.preventDefault();
-                fetchProxies();
-            });
-
+            document.getElementById('refreshBtn').addEventListener('click', (e) => { e.preventDefault(); fetchProxies(); });
             document.getElementById('checkAllBtn').addEventListener('click', checkAllProxies);
 
             sourceLabel.textContent = DATA_SOURCES[currentSource].label;
@@ -682,9 +653,7 @@
         }
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            if (document.getElementById('main-content').style.display === 'flex') {
-                initApp();
-            }
+            if (document.getElementById('main-content').style.display === 'flex') initApp();
         }
     </script>
 </body>
