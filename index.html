@@ -184,9 +184,15 @@
         }
 
         /* MTProto 卡片悬停效果 */
+        .mtproto-card {
+            background: #fdf6e3;
+            border: 1px solid rgba(160, 82, 45, 0.15);
+            box-shadow: 0 1px 4px rgba(160, 82, 45, 0.06);
+        }
         .mtproto-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(160, 82, 45, 0.15), 0 4px 6px -4px rgba(160, 82, 45, 0.15);
+            box-shadow: 0 10px 20px -3px rgba(160, 82, 45, 0.18), 0 4px 8px -4px rgba(160, 82, 45, 0.12);
+            border-color: rgba(160, 82, 45, 0.3);
         }
 
         /* 书院风装饰边框 */
@@ -194,12 +200,6 @@
             background: #fdf6e3;
             border: 1px solid rgba(160, 82, 45, 0.2);
             box-shadow: 0 2px 16px rgba(160, 82, 45, 0.08), inset 0 0 40px rgba(160, 82, 45, 0.02);
-        }
-
-        /* 墨色标题 */
-        .ink-title {
-            color: #3d2b1f;
-            text-shadow: 0 1px 2px rgba(160, 82, 45, 0.1);
         }
     </style>
 </head>
@@ -231,7 +231,6 @@
                 </div>
                 <div class="flex items-center gap-2 mt-1 flex-wrap justify-center">
                     <span id="pageTabSocks5" class="page-tab active">SOCKS5</span>
-                    <span id="pageTabHttp" class="page-tab inactive">HTTP</span>
                     <span id="pageTabMtproto" class="page-tab inactive">MTProto</span>
                     <span class="w-px h-4 bg-amber-700/20 mx-1"></span>
                     <span id="dataSourceLabel" class="text-[10px] font-mono text-amber-800 bg-amber-50/80 px-3 py-1 rounded-full border border-amber-700/15 source-label-clickable" title="点击切换数据源">📡 数据源: 本地</span>
@@ -373,7 +372,7 @@
 
 
         // ================================================================
-        //  第二部分：代理页面逻辑
+        //  第二部分：代理页面逻辑（SOCKS5 + MTProto）
         // ================================================================
         function initApp() {
             const DATA_SOURCES = {
@@ -393,7 +392,6 @@
             let isCheckingAll = false;
 
             const tabSocks5 = document.getElementById('pageTabSocks5');
-            const tabHttp = document.getElementById('pageTabHttp');
             const tabMtproto = document.getElementById('pageTabMtproto');
             const sourceLabel = document.getElementById('dataSourceLabel');
             const switchPageBtn = document.getElementById('switchPage');
@@ -403,10 +401,9 @@
                 if (page === currentPage) return;
                 currentPage = page;
                 tabSocks5.className = `page-tab ${page === 'socks5' ? 'active' : 'inactive'}`;
-                tabHttp.className = `page-tab ${page === 'http' ? 'active' : 'inactive'}`;
                 tabMtproto.className = `page-tab ${page === 'mtproto' ? 'active' : 'inactive'}`;
                 fetchProxies();
-                showToast(`📄 切换到 ${page === 'socks5' ? 'SOCKS5' : page === 'http' ? 'HTTP' : 'MTProto'} 列表`);
+                showToast(`📄 切换到 ${page === 'socks5' ? 'SOCKS5' : 'MTProto'} 列表`);
             }
 
             // ==================== 切换数据源 ====================
@@ -456,7 +453,7 @@
                         return;
                     }
 
-                    // ===== SOCKS5 / HTTP 数据源 =====
+                    // ===== SOCKS5 数据源 =====
                     const url = DATA_SOURCES[currentSource].url;
                     const response = await fetch(url);
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -468,11 +465,11 @@
                     for (const line of lines) {
                         const trimmed = line.trim();
                         if (!trimmed || trimmed.startsWith('#')) continue;
-                        const match = trimmed.match(/^(socks5|http|https):\/\/[^\s:]+:\d+/i);
+                        const match = trimmed.match(/^(socks5):\/\/[^\s:]+:\d+/i);
                         if (match) proxyUrls.push(match[0]);
                     }
 
-                    if (proxyUrls.length === 0) throw new Error('未匹配到任何代理节点');
+                    if (proxyUrls.length === 0) throw new Error('未匹配到任何 SOCKS5 节点');
 
                     proxyItems = proxyUrls.map((url, index) => ({
                         id: index,
@@ -482,7 +479,7 @@
                         server: extractServer(url),
                         port: extractPort(url),
                         tgLink: convertToTgLink(url),
-                        protocol: getProtocolLabel(url)
+                        protocol: 'SOCKS5'
                     }));
 
                     statusSpan.innerHTML = `🟢 节点可用: ${proxyItems.length}`;
@@ -523,12 +520,6 @@
                 const [server, port] = hostport.split(':');
                 return `tg://socks?server=${encodeURIComponent(server)}&port=${encodeURIComponent(port)}&user=${encodeURIComponent('TG频道@stymei')}&pass=${encodeURIComponent('TG频道@stymei')}`;
             }
-            function getProtocolLabel(url) {
-                if (url.startsWith('socks5://')) return 'SOCKS5';
-                if (url.startsWith('https://')) return 'HTTPS';
-                if (url.startsWith('http://')) return 'HTTP';
-                return 'UNKNOWN';
-            }
             function getStatusBadge(status) {
                 const map = {
                     'idle': { label: '待测', class: 'idle' },
@@ -545,16 +536,14 @@
 
                 let filtered = items;
                 if (currentPage === 'socks5') {
-                    filtered = items.filter(i => i.url.startsWith('socks5://'));
-                } else if (currentPage === 'http') {
-                    filtered = items.filter(i => i.url.startsWith('http://') || i.url.startsWith('https://'));
+                    filtered = items.filter(i => i.protocol === 'SOCKS5');
                 } else {
                     filtered = items.filter(i => i.protocol === 'MTPROTO');
                 }
 
-                // MTProto 页面使用浅色背景
+                // MTProto 页面使用网格布局
                 if (currentPage === 'mtproto') {
-                    list.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 bg-amber-100/50 p-4 rounded-2xl';
+                    list.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
                 } else {
                     list.className = 'space-y-3';
                 }
@@ -569,53 +558,65 @@
                     const statusBadge = getStatusBadge(item.status);
                     const isMtproto = item.protocol === 'MTPROTO';
 
-                    // ===== MTProto 卡片样式 =====
+                    // ===== MTProto 卡片样式（书院风） =====
                     if (isMtproto) {
                         const host = item.server;
                         const deepLink = item.tgLink;
 
-                        let mtStatusBadge = `<span class="bg-green-700/10 text-green-800 border border-green-700/20 text-xs px-2 py-0.5 rounded-md font-medium">在线</span>`;
+                        let mtStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-md font-bold bg-green-700/10 text-green-800 border border-green-700/20">在线</span>`;
                         if (item.status === 'invalid') {
-                            mtStatusBadge = `<span class="bg-red-700/10 text-red-800 border border-red-700/20 text-xs px-2 py-0.5 rounded-md font-medium">离线</span>`;
+                            mtStatusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-md font-bold bg-red-700/10 text-red-800 border border-red-700/20">离线</span>`;
                         }
 
                         return `
-                            <div class="bg-amber-50 rounded-2xl p-5 border border-amber-700/15 shadow-sm mtproto-card transition duration-200 flex flex-col justify-between" data-id="${item.id}">
+                            <div class="mtproto-card rounded-2xl p-5 flex flex-col justify-between transition duration-200" data-id="${item.id}">
                                 <div>
+                                    <!-- 头部：国旗 + 名称 + 状态 + 延迟 -->
                                     <div class="flex items-center justify-between mb-3">
                                         <div class="flex items-center gap-2 min-w-0">
                                             <span class="text-xl">${item.flag || '🌐'}</span>
-                                            <h3 class="font-bold text-amber-900 text-md truncate max-w-[160px]">${item.location || host}</h3>
+                                            <h3 class="font-bold text-amber-900 text-sm truncate max-w-[140px]">${item.location || host}</h3>
                                         </div>
                                         <div class="flex items-center gap-1.5 flex-shrink-0">
                                             ${mtStatusBadge}
-                                            <span class="text-xs font-mono text-amber-800/60 bg-amber-100 px-1.5 py-0.5 rounded">${item.latency || 'N/A'}</span>
+                                            <span class="text-[10px] font-mono text-amber-800/60 bg-amber-100/70 px-2 py-0.5 rounded-md border border-amber-700/10">${item.latency || 'N/A'}</span>
                                         </div>
                                     </div>
 
-                                    <div class="space-y-1 text-xs font-mono text-amber-800/60 bg-amber-100/50 p-2.5 rounded-xl mb-4 border border-amber-700/10">
-                                        <div class="flex justify-between"><span class="text-amber-700/50">服务器:</span> <span class="text-amber-900 truncate max-w-[180px]">${host}</span></div>
-                                        <div class="flex justify-between"><span class="text-amber-700/50">端　口:</span> <span class="text-amber-900">${item.port}</span></div>
-                                        <div class="flex justify-between"><span class="text-amber-700/50">密　钥:</span> <span class="text-amber-900 truncate max-w-[150px]" title="${item.secret || ''}">${item.secret || ''}</span></div>
+                                    <!-- 详细信息 -->
+                                    <div class="space-y-1.5 text-[11px] font-mono bg-amber-100/50 p-3 rounded-xl mb-4 border border-amber-700/10">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-amber-700/60">服务器</span>
+                                            <span class="text-amber-900 font-semibold truncate max-w-[170px]">${host}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-amber-700/60">端　口</span>
+                                            <span class="text-amber-900 font-semibold">${item.port}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-amber-700/60">密　钥</span>
+                                            <span class="text-amber-900 font-semibold truncate max-w-[140px]" title="${item.secret || ''}">${item.secret || ''}</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-3 gap-2 pt-2 border-t border-amber-700/10 text-xs">
-                                    <a href="${deepLink}" class="bg-amber-700 hover:bg-amber-800 text-amber-50 font-medium py-2 rounded-lg text-center transition flex items-center justify-center gap-1">
-                                        <i class="fa-solid fa-bolt"></i> 连接
+                                <!-- 操作按钮 -->
+                                <div class="grid grid-cols-3 gap-2 pt-3 border-t border-amber-700/10 text-xs">
+                                    <a href="${deepLink}" class="bg-amber-700 hover:bg-amber-800 text-amber-50 font-bold py-2 rounded-lg text-center transition flex items-center justify-center gap-1 shadow-sm active:scale-95">
+                                        <i class="fas fa-bolt text-[10px]"></i> 连接
                                     </a>
-                                    <button onclick="copyRawLink(event, '${deepLink}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-medium py-2 rounded-lg transition text-center cursor-pointer flex items-center justify-center gap-1">
-                                        <i class="fa-solid fa-copy"></i> 复制
+                                    <button onclick="copyRawLink(event, '${deepLink}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold py-2 rounded-lg transition text-center cursor-pointer flex items-center justify-center gap-1 border border-amber-700/10">
+                                        <i class="fas fa-copy text-[10px]"></i> 复制
                                     </button>
-                                    <button onclick="showQRCode('${deepLink}', '${(item.location || '').replace(/'/g, "\\'")}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-medium py-2 rounded-lg transition text-center cursor-pointer flex items-center justify-center gap-1">
-                                        <i class="fa-solid fa-qrcode"></i> 二维码
+                                    <button onclick="showQRCode('${deepLink}', '${(item.location || '').replace(/'/g, "\\'")}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold py-2 rounded-lg transition text-center cursor-pointer flex items-center justify-center gap-1 border border-amber-700/10">
+                                        <i class="fas fa-qrcode text-[10px]"></i> 二维码
                                     </button>
                                 </div>
                             </div>
                         `;
                     }
 
-                    // ===== SOCKS5 / HTTP 卡片样式 =====
+                    // ===== SOCKS5 卡片样式 =====
                     return `
                         <div class="proxy-item group bg-amber-50/50 hover:bg-amber-50 border border-amber-700/10 hover:border-amber-700/25 rounded-xl p-3.5 flex items-center justify-between transition-all duration-300" data-id="${item.id}">
                             <div class="flex items-center gap-3 min-w-0">
@@ -653,9 +654,7 @@
             function updateStats() {
                 let filtered = proxyItems;
                 if (currentPage === 'socks5') {
-                    filtered = proxyItems.filter(i => i.url.startsWith('socks5://'));
-                } else if (currentPage === 'http') {
-                    filtered = proxyItems.filter(i => i.url.startsWith('http://') || i.url.startsWith('https://'));
+                    filtered = proxyItems.filter(i => i.protocol === 'SOCKS5');
                 } else {
                     filtered = proxyItems.filter(i => i.protocol === 'MTPROTO');
                 }
@@ -693,7 +692,7 @@
                 const btn = document.getElementById('checkAllBtn');
                 btn.innerHTML = '<span class="checking-spinner"></span><span>检测中...</span>';
                 btn.disabled = true;
-                const target = proxyItems.filter(i => currentPage === 'socks5' ? i.url.startsWith('socks5://') : currentPage === 'http' ? (i.url.startsWith('http://') || i.url.startsWith('https://')) : i.protocol === 'MTPROTO');
+                const target = proxyItems.filter(i => currentPage === 'socks5' ? i.protocol === 'SOCKS5' : i.protocol === 'MTPROTO');
                 await Promise.allSettled(target.map(i => checkSingleProxy(i.id)));
                 isCheckingAll = false;
                 btn.innerHTML = '<i class="fas fa-heartbeat text-[10px]"></i><span>检测全部</span>';
@@ -755,12 +754,11 @@
 
             // ==================== 事件绑定 ====================
             switchPageBtn.addEventListener('click', () => {
-                const order = ['socks5', 'http', 'mtproto'];
+                const order = ['socks5', 'mtproto'];
                 const next = order[(order.indexOf(currentPage) + 1) % order.length];
                 switchPage(next);
             });
             tabSocks5.addEventListener('click', () => switchPage('socks5'));
-            tabHttp.addEventListener('click', () => switchPage('http'));
             tabMtproto.addEventListener('click', () => switchPage('mtproto'));
             sourceLabel.addEventListener('click', switchDataSource);
             document.getElementById('refreshBtn').addEventListener('click', (e) => { e.preventDefault(); fetchProxies(); });
