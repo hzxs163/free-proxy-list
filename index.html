@@ -183,7 +183,7 @@
             100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
         }
 
-        /* MTProto 卡片悬停效果 */
+        /* ===== MTProto 卡片（书院风） ===== */
         .mtproto-card {
             background: #fdf6e3;
             border: 1px solid rgba(160, 82, 45, 0.15);
@@ -193,6 +193,28 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 20px -3px rgba(160, 82, 45, 0.18), 0 4px 8px -4px rgba(160, 82, 45, 0.12);
             border-color: rgba(160, 82, 45, 0.3);
+        }
+
+        /* MTProto 信息区：暖黄底，和卡片统一 */
+        .mtproto-info {
+            background: #f5e6c8;
+            border: 1px solid rgba(160, 82, 45, 0.12);
+        }
+
+        /* MTProto 次要按钮：暖黄底 */
+        .mtproto-btn-secondary {
+            background: #f5e6c8;
+            border: 1px solid rgba(160, 82, 45, 0.15);
+            color: #8b4513;
+            transition: all 0.2s ease;
+        }
+        .mtproto-btn-secondary:hover {
+            background: #ebd9b4;
+            border-color: rgba(160, 82, 45, 0.3);
+            color: #6b3410;
+        }
+        .mtproto-btn-secondary:active {
+            transform: scale(0.97);
         }
 
         /* 书院风装饰边框 */
@@ -541,7 +563,6 @@
                     filtered = items.filter(i => i.protocol === 'MTPROTO');
                 }
 
-                // MTProto 页面使用网格布局
                 if (currentPage === 'mtproto') {
                     list.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
                 } else {
@@ -558,7 +579,7 @@
                     const statusBadge = getStatusBadge(item.status);
                     const isMtproto = item.protocol === 'MTPROTO';
 
-                    // ===== MTProto 卡片样式（书院风） =====
+                    // ===== MTProto 卡片（书院风，暖黄底） =====
                     if (isMtproto) {
                         const host = item.server;
                         const deepLink = item.tgLink;
@@ -579,36 +600,36 @@
                                         </div>
                                         <div class="flex items-center gap-1.5 flex-shrink-0">
                                             ${mtStatusBadge}
-                                            <span class="text-[10px] font-mono text-amber-800/60 bg-amber-100/70 px-2 py-0.5 rounded-md border border-amber-700/10">${item.latency || 'N/A'}</span>
+                                            <span class="text-[10px] font-mono text-amber-800/70 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-700/10">${item.latency || 'N/A'}</span>
                                         </div>
                                     </div>
 
-                                    <!-- 详细信息 -->
-                                    <div class="space-y-1.5 text-[11px] font-mono bg-amber-100/50 p-3 rounded-xl mb-4 border border-amber-700/10">
+                                    <!-- 信息区：暖黄底（不再是灰色） -->
+                                    <div class="mtproto-info space-y-1.5 text-[11px] font-mono p-3 rounded-xl mb-4">
                                         <div class="flex justify-between items-center">
-                                            <span class="text-amber-700/60">服务器</span>
+                                            <span class="text-amber-700/70">服务器</span>
                                             <span class="text-amber-900 font-semibold truncate max-w-[170px]">${host}</span>
                                         </div>
                                         <div class="flex justify-between items-center">
-                                            <span class="text-amber-700/60">端　口</span>
+                                            <span class="text-amber-700/70">端　口</span>
                                             <span class="text-amber-900 font-semibold">${item.port}</span>
                                         </div>
                                         <div class="flex justify-between items-center">
-                                            <span class="text-amber-700/60">密　钥</span>
+                                            <span class="text-amber-700/70">密　钥</span>
                                             <span class="text-amber-900 font-semibold truncate max-w-[140px]" title="${item.secret || ''}">${item.secret || ''}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- 操作按钮 -->
+                                <!-- 底部按钮：暖黄底（不再是灰色） -->
                                 <div class="grid grid-cols-3 gap-2 pt-3 border-t border-amber-700/10 text-xs">
                                     <a href="${deepLink}" class="bg-amber-700 hover:bg-amber-800 text-amber-50 font-bold py-2 rounded-lg text-center transition flex items-center justify-center gap-1 shadow-sm active:scale-95">
                                         <i class="fas fa-bolt text-[10px]"></i> 连接
                                     </a>
-                                    <button onclick="copyRawLink(event, '${deepLink}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold py-2 rounded-lg transition text-center cursor-pointer flex items-center justify-center gap-1 border border-amber-700/10">
+                                    <button onclick="copyRawLink(event, '${deepLink}')" class="mtproto-btn-secondary font-bold py-2 rounded-lg text-center cursor-pointer flex items-center justify-center gap-1">
                                         <i class="fas fa-copy text-[10px]"></i> 复制
                                     </button>
-                                    <button onclick="showQRCode('${deepLink}', '${(item.location || '').replace(/'/g, "\\'")}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold py-2 rounded-lg transition text-center cursor-pointer flex items-center justify-center gap-1 border border-amber-700/10">
+                                    <button onclick="showQRCode('${deepLink}', '${(item.location || '').replace(/'/g, "\\'")}')" class="mtproto-btn-secondary font-bold py-2 rounded-lg text-center cursor-pointer flex items-center justify-center gap-1">
                                         <i class="fas fa-qrcode text-[10px]"></i> 二维码
                                     </button>
                                 </div>
