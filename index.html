@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAABwklEQVR4nO2Vv0sCURzHPyIiIhycQkQEJ0ERQTgFh0DQwV1E/AMcHEQQB3FwEBFxcwkXF3FwcHAQwUH8AyKCOIkK4uAkCILgYBDUL0KPB+9u3t3dy77vOdyH7x3vPZ7nffp9gsFg0Ov1mhRFIVRVtQdIui1hKjUAWJMCZt1WPgBtT2R8jQzidrsvSCQSxeVyHTcajXvXr9Ppg2QXGayW4QkHqC3KKhCYzWam2+1+U61Wbc45u91uT+12+5mqqpi2bV/Y7XZHLUJjQKlU8imKgnmej1VVNUqlkliWNRKJRE5t24bBYDBVKpUZ3nNKUC7rAoiiSC6XS1JRFJEkKdLtdmXHcbh1XVuQZflSURRptVph7FgcDodPgsHgaCAQOJcV5bkMpmmKqqrGNE2T/34CvV6Pc86njeHIycnJLVEUizvHtm2S7M7n815XVdUJBoPT3hPI5/ODZBhSVdXmXk6r1aoHgsFgvjNrCMDR01qtFsFgMHooyu+MQU4Vz/tYXcS2ba3VavnYNVf7CjIAsoyA6V1FLvP7Ikj3h28Rj8fbvF5v73g8mr/LULPZHMWGCAaDfU3T3tdf+2h/1n+CvJkAAAAASUVORK5CYII=">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -178,9 +179,11 @@
             100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
         }
 
-        .mtproto-flag { font-size: 16px; margin-right: 4px; }
-        .mtproto-ping { font-size: 9px; color: #34d399; }
-        .mtproto-speed { font-size: 9px; color: #60a5fa; }
+        /* MTProto 卡片悬停效果 */
+        .mtproto-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -269,6 +272,21 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- ===== 二维码弹窗 ===== -->
+    <div id="qrModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[9999]">
+        <div class="bg-slate-900 border border-white/10 p-6 rounded-2xl max-w-sm w-full mx-4 shadow-2xl text-center relative">
+            <button onclick="closeQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer text-xl">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="font-bold text-lg text-slate-200 mb-2" id="qrTitle">扫描二维码</h3>
+            <p class="text-xs text-slate-500 mb-4">使用 Telegram 扫描或点击直接连接</p>
+            <div id="qrcode" class="flex justify-center p-4 bg-white rounded-xl mb-4"></div>
+            <a id="qrLink" href="#" class="block w-full bg-brand-500 hover:bg-brand-600 text-white text-center py-2.5 rounded-lg font-bold transition">
+                直接连接 Telegram
+            </a>
+        </div>
     </div>
 
     <script>
@@ -388,20 +406,21 @@
                 const statusSpan = document.getElementById('statusText');
 
                 statusSpan.innerHTML = '🔄 同步中...';
+
+                // 骨架屏
+                listContainer.className = 'space-y-3';
                 listContainer.innerHTML = Array(4).fill(0).map(() => `
                     <div class="shimmer h-[74px] rounded-xl border border-white/5"></div>
                 `).join('');
 
                 try {
-                    let proxyUrls = [];
-
+                    // ===== MTProto 数据源 =====
                     if (currentPage === 'mtproto') {
-                        // ===== MTProto 数据源 =====
                         const resp = await fetch('https://seep.eu.org/https://www.mtproto.shop/proxies.json');
                         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                         const data = await resp.json();
 
-                        proxyItems = data.proxies.map((p, index) => ({
+                        proxyItems = (data.proxies || []).map((p, index) => ({
                             id: index,
                             url: p.link,
                             status: 'idle',
@@ -411,6 +430,7 @@
                             location: p.location,
                             flag: p.flag,
                             speed: p.speed,
+                            secret: p.secret,
                             tgLink: p.link,
                             protocol: 'MTPROTO'
                         }));
@@ -428,6 +448,8 @@
                     const text = await response.text();
 
                     const lines = text.split('\n');
+                    const proxyUrls = [];
+
                     for (const line of lines) {
                         const trimmed = line.trim();
                         if (!trimmed || trimmed.startsWith('#')) continue;
@@ -508,11 +530,18 @@
 
                 let filtered = items;
                 if (currentPage === 'socks5') {
-                    filtered = items.filter(i => i.url.startsWith('socks5://') || i.protocol === 'MTPROTO');
+                    filtered = items.filter(i => i.url.startsWith('socks5://'));
                 } else if (currentPage === 'http') {
                     filtered = items.filter(i => i.url.startsWith('http://') || i.url.startsWith('https://'));
                 } else {
                     filtered = items.filter(i => i.protocol === 'MTPROTO');
+                }
+
+                // MTProto 页面使用浅色背景
+                if (currentPage === 'mtproto') {
+                    list.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-100 p-4 rounded-2xl';
+                } else {
+                    list.className = 'space-y-3';
                 }
 
                 if (!filtered.length) {
@@ -525,6 +554,53 @@
                     const statusBadge = getStatusBadge(item.status);
                     const isMtproto = item.protocol === 'MTPROTO';
 
+                    // ===== MTProto 卡片样式 =====
+                    if (isMtproto) {
+                        const host = item.server;
+                        const deepLink = item.tgLink;
+
+                        let mtStatusBadge = `<span class="bg-emerald-50 text-emerald-600 border border-emerald-200 text-xs px-2 py-0.5 rounded-md font-medium">在线</span>`;
+                        if (item.status === 'invalid') {
+                            mtStatusBadge = `<span class="bg-rose-50 text-rose-600 border border-rose-200 text-xs px-2 py-0.5 rounded-md font-medium">离线</span>`;
+                        }
+
+                        return `
+                            <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mtproto-card transition duration-200 flex flex-col justify-between" data-id="${item.id}">
+                                <div>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="text-xl">${item.flag || '🌐'}</span>
+                                            <h3 class="font-bold text-slate-800 text-md truncate max-w-[160px]">${item.location || host}</h3>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            ${mtStatusBadge}
+                                            <span class="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">${item.latency || 'N/A'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-1 text-xs font-mono text-slate-500 bg-slate-50 p-2.5 rounded-xl mb-4 border border-slate-100">
+                                        <div class="flex justify-between"><span class="text-slate-400">服务器:</span> <span class="text-slate-700 truncate max-w-[180px]">${host}</span></div>
+                                        <div class="flex justify-between"><span class="text-slate-400">端　口:</span> <span class="text-slate-700">${item.port}</span></div>
+                                        <div class="flex justify-between"><span class="text-slate-400">密　钥:</span> <span class="text-slate-700 truncate max-w-[150px]" title="${item.secret || ''}">${item.secret || ''}</span></div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
+                                    <a href="${deepLink}" class="bg-sky-500 hover:bg-sky-600 text-white font-medium py-2 rounded-lg text-center transition flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-bolt"></i> 连接
+                                    </a>
+                                    <button onclick="copyRawLink(event, '${deepLink}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 rounded-lg transition text-center cursor-pointer flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-copy"></i> 复制
+                                    </button>
+                                    <button onclick="showQRCode('${deepLink}', '${(item.location || '').replace(/'/g, "\\'")}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 rounded-lg transition text-center cursor-pointer flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-qrcode"></i> 二维码
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // ===== SOCKS5 / HTTP 卡片样式 =====
                     return `
                         <div class="proxy-item group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-brand-500/30 rounded-xl p-3.5 flex items-center justify-between transition-all duration-300" data-id="${item.id}">
                             <div class="flex items-center gap-3 min-w-0">
@@ -537,15 +613,15 @@
                                         <span class="w-1 h-1 rounded-full bg-cyan-400"></span>
                                         <span class="text-[9px] font-mono text-slate-400">PORT:${item.port}</span>
                                         <span class="status-badge ${statusBadge.class}">${statusBadge.label}</span>
-                                        ${item.latency ? `<span class="mtproto-ping">${item.latency}</span>` : ''}
-                                        ${item.speed ? `<span class="mtproto-speed">${item.speed}</span>` : ''}
+                                        ${item.latency ? `<span class="text-[9px] text-slate-500">${item.latency}</span>` : ''}
                                     </div>
-                                    <p class="text-sm font-mono font-bold text-slate-200 mt-0.5 truncate select-all">
-                                        ${isMtproto ? `<span class="mtproto-flag">${item.flag || ''}</span>${item.location || displayIp}` : displayIp}
-                                    </p>
+                                    <p class="text-sm font-mono font-bold text-slate-200 mt-0.5 truncate select-all">${displayIp}</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
+                                <button onclick="checkSingleProxy(${item.id})" class="p-2 text-slate-400 hover:text-slate-200 bg-white/0 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5 transition-all" title="检测此节点">
+                                    <i class="fas fa-sync text-xs ${item.status === 'checking' ? 'fa-spin' : ''}"></i>
+                                </button>
                                 <button onclick="copyRawLink(event, '${item.tgLink}')" class="p-2 text-slate-400 hover:text-slate-200 bg-white/0 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5 transition-all" title="复制链接">
                                     <i class="far fa-copy text-xs"></i>
                                 </button>
@@ -634,6 +710,33 @@
             };
             window.checkSingleProxy = checkSingleProxy;
             window.fetchProxies = fetchProxies;
+
+            // ==================== 二维码 ====================
+            window.showQRCode = function(link, name) {
+                const qrContainer = document.getElementById('qrcode');
+                qrContainer.innerHTML = '';
+                document.getElementById('qrTitle').innerText = (name || '') + ' - 节点扫描';
+                document.getElementById('qrLink').href = link;
+
+                new QRCode(qrContainer, {
+                    text: link,
+                    width: 180,
+                    height: 180,
+                    colorDark: "#0f172a",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                const modal = document.getElementById('qrModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            };
+
+            window.closeQRModal = function() {
+                const modal = document.getElementById('qrModal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            };
 
             // ==================== 事件绑定 ====================
             switchPageBtn.addEventListener('click', () => {
