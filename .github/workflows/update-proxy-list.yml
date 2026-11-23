@@ -97,14 +97,9 @@ jobs:
             exit 0
           fi
 
-          BODY="自动更新任务抓取失败。
-
-          - 时间：$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M')（北京时间）
-          - 原因：${REASON:-未知}
-          - 运行记录：$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-
-          proxy.txt 仍保留上一次成功的数据，不会丢失。
-          常见原因：源站地区限制/风控拦截、账号密码失效、页面结构变化。"
+          BODY=$(printf '自动更新任务抓取失败。\n\n- 时间：%s（北京时间）\n- 原因：%s\n- 运行记录：%s/%s/actions/runs/%s\n\nproxy.txt 仍保留上一次成功的数据，不会丢失。\n常见原因：源站地区限制/风控拦截、账号密码失效、页面结构变化。\n' \
+            "$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M')" "${REASON:-未知}" \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
 
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body "$BODY"
