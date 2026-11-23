@@ -1,64 +1,116 @@
 name: 更新代理列表
 
-# 添加权限配置
+# 说明：
+# - 不再使用 actions/setup-python，直接用 runner 自带的 python3。
+#   2026-10-23 起 ubuntu-latest 升级到 26.04，旧写法（setup-python@v4 + 3.9）
+#   会直接报 "version '3.9' not found for Ubuntu 26.04" 而失败，这里彻底规避。
+# - 每次运行都会写 last_run.txt，保证仓库持续有提交：
+#   GitHub 对"60 天无活动"的仓库会自动停用定时任务，心跳提交可避免被停。
+# - 抓取失败时不覆盖 proxy.txt（保留上次有效数据），并自动开一个 Issue 提醒。
+
 permissions:
   contents: write
-  actions: read
-  pull-requests: write
   issues: write
-  repository-projects: write
 
 on:
   schedule:
-    # 每天早上7点和晚上7点更新代理列表（北京时间）
-    - cron: '0 23 * * *'  # 北京时间早上7点 (UTC 23:00)
-    - cron: '0 11 * * *'  # 北京时间晚上7点 (UTC 11:00)
-  workflow_dispatch:
-    # 允许手动触发
+    # GitHub 的 cron 使用 UTC 时间；下面两个分别是北京时间 07:00 和 19:00
+    - cron: '0 23 * * *'
+    - cron: '0 11 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: free-proxy-list-update
+  cancel-in-progress: false
 
 jobs:
   update-proxies:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 30
+
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0
-        ref: main
-      
-    - name: 设置Python环境
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-        
-    - name: 安装依赖
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests beautifulsoup4
-        
-    - name: 抓取代理列表
-      run: |
-        echo "开始抓取代理列表..."
-        python generate_proxy_list.py
-        echo "抓取完成，检查文件是否生成..."
-        if [ -f proxy.txt ]; then
-          echo "proxy.txt 文件已生成"
-          echo "文件内容预览："
-          head -5 proxy.txt
-        else
-          echo "proxy.txt 文件未生成"
-          exit 1
-        fi
-        
-    - name: 提交更新
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Action"
-        git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }}.git
-        git add proxy.txt
-        git commit -m "更新代理列表" || echo "没有更改"
-        git push origin +main:main
+      - name: 检出代码
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 检查运行环境
+        run: |
+          echo "Python: $(python3 -V 2>&1)"
+          python3 -m pip --version || true
+
+      - name: 安装依赖
+        run: |
+          set -e
+          if ! python3 -m pip --version >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y python3-pip
+          fi
+          # Ubuntu 24.04+ 的系统 Python 受 PEP 668 保护，需要 --break-system-packages
+          python3 -m pip install --break-system-packages --disable-pip-version-check -q requests beautifulsoup4
+
+      - name: 抓取代理列表
+        env:
+          PROXY_BASE_URL: ${{ secrets.PROXY_BASE_URL }}
+          PROXY_USERNAME: ${{ secrets.PROXY_USERNAME }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+        run: |
+          python3 generate_proxy_list.py
+          echo "--- last_run.txt ---"
+          cat last_run.txt || true
+          echo "--- proxy.txt（前 6 行）---"
+          head -6 proxy.txt || true
+
+      - name: 提交更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -f proxy.txt last_run.txt 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "本次没有变化，跳过提交"
+            exit 0
+          fi
+
+          git commit -m "chore: 更新代理列表 $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M')"
+
+          # 防止其他提交插队导致 push 被拒
+          git pull --rebase --autostash origin main || true
+          git push origin HEAD:main
+
+      - name: 失败提醒（自动开 Issue）
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          STATUS=$(grep -m1 '^status=' last_run.txt 2>/dev/null | cut -d= -f2 || true)
+          REASON=$(grep -m1 '^reason=' last_run.txt 2>/dev/null | cut -d= -f2- || true)
+
+          EXISTING=$(gh issue list --state open --search "代理源抓取失败 in:title" --json number --jq '.[0].number // empty' 2>/dev/null || true)
+
+          if [ "$STATUS" = "OK" ]; then
+            if [ -n "$EXISTING" ]; then
+              gh issue close "$EXISTING" --comment "✅ $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M')（北京时间）抓取已恢复正常，自动关闭此提醒。"
+            fi
+            exit 0
+          fi
+
+          BODY="自动更新任务抓取失败。
+
+          - 时间：$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M')（北京时间）
+          - 原因：${REASON:-未知}
+          - 运行记录：$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          proxy.txt 仍保留上一次成功的数据，不会丢失。
+          常见原因：源站地区限制/风控拦截、账号密码失效、页面结构变化。"
+
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "代理源抓取失败（自动更新需要关注）" --body "$BODY"
+          fi
+
+          # 提醒步骤本身绝不能让工作流变红
+          exit 0
