@@ -202,8 +202,8 @@ class ProxyListScraper:
             location = cells[3].get_text(' ', strip=True) if len(cells) > 3 else '未知'
 
             # 清理位置字段里的按钮文字
-            location = location.replace('复制', '').replace('已复制', '').strip()
-            location = ' '.join(location.split())
+            location = location.replace('已复制', '').replace('复制', '')
+            location = ' '.join(location.split()).rstrip('已').strip()
 
             # IP 里可能混入 "ip:port"；被脱敏的（如 115.79.X.22）记为 masked 后跳过
             match = IP_RE.search(ip_raw)
