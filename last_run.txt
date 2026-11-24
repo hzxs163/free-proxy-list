@@ -1,9 +1,9 @@
-time_beijing=2026-11-24 14:52:00
-time_utc=2026-11-24 06:52:00
+time_beijing=2026-11-25 04:57:35
+time_utc=2026-11-24 20:57:35
 status=OK
-count=16
+count=20
 masked=0
-elapsed=1.5s
+elapsed=1.4s
 source=https://proxy-socks5.com/proxy_list
-runner=GitHub Actions 1000008387
+runner=GitHub Actions 1000008414
 reason=
